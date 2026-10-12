@@ -153,3 +153,32 @@ export function useImportTasks() {
     // Errors are shown inline in the import dialog, where the user can fix the file.
   })
 }
+
+/** Downloads every task in the bank (ignoring filters) as a JSON file that the import dialog accepts. */
+export function useExportTasks() {
+  const toast = useToast()
+  const { t } = useI18n()
+  const errorText = useErrorText()
+  return useMutation({
+    mutationFn: async () => {
+      const all = await unwrap(api.GET('/admin/tasks', { params: { query: {} } }))
+      const tasks: TaskInput[] = all.map((x) => ({
+        section: x.section,
+        prompt: x.prompt,
+        passage: x.passage ?? '',
+        options: x.options,
+        correctIndex: x.correctIndex ?? 0,
+        explanation: x.explanation ?? '',
+      }))
+      const url = URL.createObjectURL(new Blob([JSON.stringify(tasks, null, 2)], { type: 'application/json' }))
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `tasks-${new Date().toISOString().slice(0, 10)}.json`
+      a.click()
+      URL.revokeObjectURL(url)
+      return tasks.length
+    },
+    onSuccess: (n) => toast.success(t('toast.tasksExported', { n })),
+    onError: (e) => toast.error(errorText(e)),
+  })
+}

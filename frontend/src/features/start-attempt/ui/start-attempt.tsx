@@ -43,7 +43,7 @@ export function StartAttempt({ examId, disabled, compact }: { examId: number; di
 
   if (!user) {
     return (
-      <Button variant="outline" size={compact ? 'sm' : 'default'} className={compact ? '' : 'w-full'} onClick={() => navigate('/login', { state: { from: location.pathname } })}>
+      <Button variant="outline" size={compact ? 'sm' : 'default'} className={compact ? 'w-full md:w-auto' : 'w-full'} onClick={() => navigate('/login', { state: { from: location.pathname } })}>
         {t('exam.loginToStart')}
       </Button>
     )
@@ -55,13 +55,14 @@ export function StartAttempt({ examId, disabled, compact }: { examId: number; di
         <Button
           variant="outline"
           size={compact ? 'sm' : 'default'}
+          className={compact ? 'flex-1 md:flex-none' : ''}
           disabled={disabled || start.isPending}
           onClick={() => start.mutate('training')}
           title={t('exam.trainingHint')}
         >
           <BookOpen size={16} /> {t('exam.training')}
         </Button>
-        <Button size={compact ? 'sm' : 'default'} disabled={disabled || start.isPending} onClick={() => start.mutate('exam')} title={t('exam.examHint')}>
+        <Button size={compact ? 'sm' : 'default'} className={compact ? 'flex-1 md:flex-none' : ''} disabled={disabled || start.isPending} onClick={() => start.mutate('exam')} title={t('exam.examHint')}>
           <Timer size={16} /> {t('exam.exam')}
         </Button>
       </div>

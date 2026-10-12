@@ -15,8 +15,8 @@ export function HistoryPage() {
   if (error) return <ErrorMessage error={error} />
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold">{t('history.title')}</h1>
+    <div className="space-y-3">
+      <h1 className="text-xl font-extrabold">{t('history.title')}</h1>
       {data.length === 0 && <p className="text-muted-foreground">{t('history.empty')}</p>}
       <ul className="space-y-2">
         {data.map((a) => {
@@ -24,17 +24,16 @@ export function HistoryPage() {
           return (
             <li key={a.id}>
               <Card>
-                <CardContent className="flex flex-wrap items-center gap-3 py-4">
+                <CardContent className="flex items-center gap-3 px-4 py-2.5">
                   <div className="min-w-0 flex-1">
-                    <p className="font-bold">{pick(a.examTitleRu, a.examTitleEn)}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {formatDate(a.startedAt, lang)}
+                    <p className="text-sm font-bold leading-snug">{pick(a.examTitleRu, a.examTitleEn)}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {t(`mode.${a.mode}`)} · {formatDate(a.startedAt, lang)}
                       {done && a.durationSeconds != null && ` · ${formatDuration(a.durationSeconds)}`}
                     </p>
                   </div>
-                  <Badge>{t(`mode.${a.mode}`)}</Badge>
                   {done ? (
-                    <span className="w-14 text-right text-lg font-extrabold tabular-nums">{formatPercent(a.scorePercent)}</span>
+                    <span className="text-base font-extrabold tabular-nums">{formatPercent(a.scorePercent)}</span>
                   ) : (
                     <Badge className="bg-accent-soft text-accent">{t('history.inProgress')}</Badge>
                   )}

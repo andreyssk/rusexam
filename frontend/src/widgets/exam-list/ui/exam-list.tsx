@@ -19,8 +19,8 @@ export function ExamList() {
   const chips: (Level | '')[] = ['', ...LEVELS]
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={t('admin.level')}>
+    <div className="space-y-3">
+      <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label={t('admin.level')}>
         {chips.map((l) => (
           <button
             key={l || 'all'}
@@ -30,7 +30,7 @@ export function ExamList() {
             translate={l ? 'no' : undefined}
             onClick={() => setLevel(l)}
             className={cn(
-              'cursor-pointer rounded-full border-2 px-4 py-1.5 text-sm font-bold',
+              'cursor-pointer rounded-full border-2 px-3 py-1 text-xs font-bold',
               level === l ? 'border-accent bg-accent-soft text-accent' : 'bg-card text-muted-foreground hover:bg-muted',
             )}
           >
@@ -41,7 +41,7 @@ export function ExamList() {
       {exams.length === 0 ? (
         <p className="py-10 text-center text-muted-foreground">{t('home.empty')}</p>
       ) : (
-        <ul className="space-y-3">
+        <ul className="space-y-2">
           {exams.map((exam) => (
             <ExamRow key={exam.id} exam={exam} actions={<StartAttempt compact examId={exam.id} disabled={exam.tasksCount === 0} />} />
           ))}

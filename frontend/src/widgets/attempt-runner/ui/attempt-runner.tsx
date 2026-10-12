@@ -1,6 +1,6 @@
 import { ChevronLeft, ChevronRight, Clock } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Navigate, useBlocker } from 'react-router-dom'
 import { cn } from '@/shared/lib/cn'
 import { formatDuration } from '@/shared/lib/format'
 import { useI18n, type TKey } from '@/shared/lib/i18n'
@@ -172,18 +172,39 @@ function Runner({ attemptId, data }: { attemptId: number; data: AttemptState }) 
     setRepeatCheck(null)
   }
 
+  // Set while the session is being ended on purpose, so the navigation that follows is not blocked.
+  const leaving = useRef(false)
+
+  const endSession = async (redirectTo?: string) => {
+    leaving.current = true
+    try {
+      // mutateAsync (not a per-call callback) because finishing navigates away and unmounts this component.
+      await finish.mutateAsync({ durationSeconds: timer.getSeconds(), redirectTo })
+      clearProgress(attemptId)
+    } catch {
+      leaving.current = false
+      // shown through finish.isError below
+    }
+  }
+
   const onEnd = async () => {
     const unanswered = total - answeredCount
     const msg = unanswered > 0 ? t('run.confirm', { n: unanswered }) : t('run.confirmAll')
     if (!(await confirm({ message: msg, confirmLabel: t('run.endSession') }))) return
-    try {
-      // mutateAsync (not a per-call callback) because finishing navigates away and unmounts this component.
-      await finish.mutateAsync(timer.getSeconds())
-      clearProgress(attemptId)
-    } catch {
-      // shown through finish.isError below
-    }
+    await endSession()
   }
+
+  // Leaving to another page ends the session, so ask first.
+  const blocker = useBlocker(({ currentLocation, nextLocation }) => !leaving.current && currentLocation.pathname !== nextLocation.pathname)
+  useEffect(() => {
+    if (blocker.state !== 'blocked') return
+    const { pathname, search, hash } = blocker.location
+    void confirm({ message: t('run.leaveWarning'), confirmLabel: t('run.endSession'), destructive: true }).then((ok) => {
+      if (ok) void endSession(pathname + search + hash)
+      else blocker.reset()
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [blocker.state])
 
   const showExplanation = revealed && answer?.explanation
   const correctText = !wasCorrect && revealed && answer?.correctIndex != null ? task.options[answer.correctIndex] : null

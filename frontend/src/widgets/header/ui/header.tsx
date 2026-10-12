@@ -1,8 +1,10 @@
-import { GraduationCap, User as UserIcon } from 'lucide-react'
+import { BookOpen, GraduationCap, History, ListChecks, LogOut, Menu, User as UserIcon, Users, X, type LucideIcon } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import { cn } from '@/shared/lib/cn'
 import { useI18n } from '@/shared/lib/i18n'
 import { Button } from '@/shared/ui/button'
+import { Tooltip } from '@/shared/ui/tooltip'
 import { LanguageSwitch } from '@/features/switch-language'
 import { ThemeSwitch } from '@/features/switch-theme'
 import { useAuth } from '@/entities/user'
@@ -13,58 +15,114 @@ const link = (isActive: boolean) =>
     isActive ? 'bg-accent-soft text-accent' : 'text-muted-foreground hover:bg-muted',
   )
 
+type NavItem = { to: string; label: string; icon: LucideIcon; end?: boolean; active?: boolean }
+
+/** Admins manage exams, the task bank and users; learners take exams and review their history. */
+function useNavItems(): NavItem[] {
+  const { t } = useI18n()
+  const { user } = useAuth()
+  const { pathname } = useLocation()
+  if (user?.role === 'admin') {
+    return [
+      { to: '/admin', label: t('nav.exams'), icon: BookOpen, active: pathname === '/admin' || pathname.startsWith('/admin/exams') },
+      { to: '/admin/tasks', label: t('nav.tasks'), icon: ListChecks },
+      { to: '/admin/users', label: t('nav.users'), icon: Users },
+    ]
+  }
+  return [
+    { to: '/', label: t('nav.exams'), icon: BookOpen, end: true },
+    ...(user ? [{ to: '/history', label: t('nav.history'), icon: History }] : []),
+  ]
+}
+
+function NavLinks() {
+  return useNavItems().map((item) => (
+    <NavLink key={item.to} to={item.to} end={item.end} className={({ isActive }) => link(item.active ?? isActive)}>
+      {item.label}
+    </NavLink>
+  ))
+}
+
+/** Mobile-only tab bar fixed to the bottom of the screen. */
+function BottomNav() {
+  const { user } = useAuth()
+  const items = useNavItems()
+  // A single tab is pointless; visitors only have the exam list.
+  if (!user) return null
+  return (
+    <nav className="fixed inset-x-0 bottom-0 z-40 flex border-t-2 bg-card pb-[env(safe-area-inset-bottom)] md:hidden">
+      {items.map(({ to, label, icon: Icon, end, active }) => (
+        <NavLink
+          key={to}
+          to={to}
+          end={end}
+          className={({ isActive }) =>
+            cn(
+              'flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-extrabold uppercase tracking-wide',
+              (active ?? isActive) ? 'text-accent' : 'text-muted-foreground',
+            )
+          }
+        >
+          <Icon size={22} />
+          {label}
+        </NavLink>
+      ))}
+    </nav>
+  )
+}
+
 export function Header() {
   const { t } = useI18n()
   const { user, logout } = useAuth()
   const location = useLocation()
+  const [open, setOpen] = useState(false)
+
+  // Close the drawer after navigating, and on Escape.
+  useEffect(() => setOpen(false), [location.pathname])
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false)
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open])
+
+  const logo = (
+    <Link to="/" className="flex items-center gap-2 text-lg font-extrabold text-primary">
+      <GraduationCap size={26} />
+      <span className="hidden md:inline">{t('app.name')}</span>
+      <span className="md:hidden">Rusexam</span>
+    </Link>
+  )
+
   return (
     <header className="border-b-2 bg-card">
-      <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
-        <Link to="/" className="flex items-center gap-2 text-lg font-extrabold text-primary">
-          <GraduationCap size={26} />
-          {t('app.name')}
-        </Link>
-        <nav className="flex flex-wrap items-center gap-1">
-          {user?.role === 'admin' ? (
-            <>
-              <Link to="/admin" className={link(location.pathname === '/admin' || location.pathname.startsWith('/admin/exams'))}>
-                {t('nav.exams')}
-              </Link>
-              <NavLink to="/admin/tasks" className={({ isActive }) => link(isActive)}>
-                {t('nav.tasks')}
-              </NavLink>
-              <NavLink to="/admin/users" className={({ isActive }) => link(isActive)}>
-                {t('nav.users')}
-              </NavLink>
-            </>
-          ) : (
-            <>
-              <NavLink to="/" end className={({ isActive }) => link(isActive)}>
-                {t('nav.exams')}
-              </NavLink>
-              {user && (
-                <NavLink to="/history" className={({ isActive }) => link(isActive)}>
-                  {t('nav.history')}
-                </NavLink>
-              )}
-            </>
-          )}
+      <div className="mx-auto flex max-w-5xl items-center gap-x-4 px-4 py-3">
+        <Button variant="ghost" size="icon" className="md:hidden" aria-label={t('nav.menu')} aria-expanded={open} onClick={() => setOpen(true)}>
+          <Menu size={22} />
+        </Button>
+        {logo}
+        <nav className="hidden items-center gap-1 md:flex">
+          <NavLinks />
         </nav>
-        <div className="ml-auto flex items-center gap-3">
+        <div className="ml-auto flex items-center gap-2 sm:gap-3">
           <ThemeSwitch />
           <LanguageSwitch />
           {user ? (
             <>
               <span
-                className="flex max-w-32 items-center gap-1.5 text-sm font-bold sm:max-w-48"
+                className="hidden max-w-48 items-center gap-1.5 text-sm font-bold md:flex"
                 title={t('auth.signedInAs', { name: user.username })}
               >
                 <UserIcon size={16} className="shrink-0 text-muted-foreground" />
                 <span className="truncate">{user.username}</span>
               </span>
-              <Button variant="outline" size="sm" onClick={() => void logout()}>
-                {t('nav.logout')}
-              </Button>
+              <span className="hidden md:inline-flex">
+                <Tooltip label={t('nav.logout')}>
+                  <Button variant="outline" size="icon" aria-label={t('nav.logout')} onClick={() => void logout()}>
+                    <LogOut size={18} />
+                  </Button>
+                </Tooltip>
+              </span>
             </>
           ) : (
             <Button size="sm" asChild>
@@ -73,6 +131,42 @@ export function Header() {
           )}
         </div>
       </div>
+
+      <div className={cn('fixed inset-0 z-50 md:hidden', !open && 'pointer-events-none')} aria-hidden={!open}>
+        <div
+          className={cn('absolute inset-0 bg-black/50 transition-opacity duration-200', open ? 'opacity-100' : 'opacity-0')}
+          onClick={() => setOpen(false)}
+        />
+        <aside
+          role="dialog"
+          aria-modal="true"
+          aria-label={t('nav.menu')}
+          className={cn(
+            'absolute inset-y-0 left-0 flex w-72 max-w-[80vw] flex-col gap-4 border-r-2 bg-card p-4 transition-transform duration-200',
+            open ? 'translate-x-0' : '-translate-x-full',
+          )}
+        >
+          <div className="flex items-center justify-between">
+            {logo}
+            <Button variant="ghost" size="icon" aria-label={t('nav.closeMenu')} onClick={() => setOpen(false)}>
+              <X size={22} />
+            </Button>
+          </div>
+          {user && (
+            <div className="mt-auto flex flex-col gap-3 border-t-2 pt-4">
+              <div className="flex items-center gap-1.5 text-sm font-bold">
+                <UserIcon size={16} className="shrink-0 text-muted-foreground" />
+                <span className="truncate">{user.username}</span>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => void logout()}>
+                <LogOut size={16} />
+                {t('nav.logout')}
+              </Button>
+            </div>
+          )}
+        </aside>
+      </div>
+      <BottomNav />
     </header>
   )
 }

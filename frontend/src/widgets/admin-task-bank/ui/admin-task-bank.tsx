@@ -1,4 +1,4 @@
-import { Plus, Upload } from 'lucide-react'
+import { Download, Plus, Upload } from 'lucide-react'
 import { useDeferredValue, useState } from 'react'
 import { SECTIONS, type AdminTask, type Section } from '@/shared/api'
 import { useI18n } from '@/shared/lib/i18n'
@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Input, Select } from '@/shared/ui/input'
 import { ErrorMessage, Loading } from '@/shared/ui/states'
 import { useExams } from '@/entities/exam'
-import { ImportTasksDialog, TaskForm, useBankTasks, useBulkTasks, type BulkAction, useCreateTask, useDeleteTask, useUpdateTask } from '@/features/manage-tasks'
+import { ImportTasksDialog, TaskForm, useBankTasks, useBulkTasks, type BulkAction, useCreateTask, useDeleteTask, useExportTasks, useUpdateTask } from '@/features/manage-tasks'
 
 type Editing = { kind: 'new' } | { kind: 'edit'; task: AdminTask } | null
 
@@ -26,6 +26,7 @@ export function AdminTaskBank() {
   const update = useUpdateTask()
   const del = useDeleteTask()
   const bulk = useBulkTasks()
+  const exportTasks = useExportTasks()
   const exams = useExams()
   const [selected, setSelected] = useState<Set<number>>(new Set())
   const ids = [...selected]
@@ -50,6 +51,9 @@ export function AdminTaskBank() {
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={() => setImporting(true)}>
               <Upload size={16} /> {t('admin.import')}
+            </Button>
+            <Button variant="outline" loading={exportTasks.isPending} onClick={() => exportTasks.mutate()}>
+              <Download size={16} /> {t('admin.export')}
             </Button>
             <Button onClick={() => setEditing({ kind: 'new' })}>
               <Plus size={16} /> {t('admin.newTask')}
