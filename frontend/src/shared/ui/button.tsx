@@ -2,6 +2,7 @@ import { Slot } from '@radix-ui/react-slot'
 import { cva, type VariantProps } from 'class-variance-authority'
 import type { ButtonHTMLAttributes } from 'react'
 import { cn } from '@/shared/lib/cn'
+import { Spinner } from './spinner'
 
 // Chunky Duolingo-style buttons: a solid "edge" under the button that collapses when pressed.
 const buttonVariants = cva(
@@ -23,9 +24,20 @@ const buttonVariants = cva(
   },
 )
 
-type Props = ButtonHTMLAttributes<HTMLButtonElement> & VariantProps<typeof buttonVariants> & { asChild?: boolean }
+type Props = ButtonHTMLAttributes<HTMLButtonElement> &
+  VariantProps<typeof buttonVariants> & {
+    asChild?: boolean
+    /** Shows a spinner and blocks clicks while a request is running. */
+    loading?: boolean
+  }
 
-export function Button({ className, variant, size, asChild, ...props }: Props) {
-  const Comp = asChild ? Slot : 'button'
-  return <Comp className={cn(buttonVariants({ variant, size }), className)} {...props} />
+export function Button({ className, variant, size, asChild, loading, disabled, children, ...props }: Props) {
+  const classes = cn(buttonVariants({ variant, size }), className)
+  if (asChild) return <Slot className={classes} {...props}>{children}</Slot>
+  return (
+    <button className={classes} disabled={disabled || loading} aria-busy={loading || undefined} {...props}>
+      {loading && <Spinner />}
+      {children}
+    </button>
+  )
 }

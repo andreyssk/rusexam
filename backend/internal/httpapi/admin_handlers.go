@@ -7,6 +7,9 @@ import (
 )
 
 func validateExam(in *ExamInput) string {
+	if !levels[in.Level] {
+		return "unknown level"
+	}
 	in.TitleRu, in.TitleEn = strings.TrimSpace(in.TitleRu), strings.TrimSpace(in.TitleEn)
 	if in.TitleRu == "" && in.TitleEn == "" {
 		return "a title is required (Russian or English)"
@@ -18,18 +21,17 @@ func validateTask(in *TaskInput) string {
 	if !sections[in.Section] {
 		return "unknown section"
 	}
-	in.PromptRu, in.PromptEn = strings.TrimSpace(in.PromptRu), strings.TrimSpace(in.PromptEn)
-	if in.PromptRu == "" && in.PromptEn == "" {
+	in.Prompt, in.Passage, in.Explanation = strings.TrimSpace(in.Prompt), strings.TrimSpace(in.Passage), strings.TrimSpace(in.Explanation)
+	if in.Prompt == "" {
 		return "a prompt is required"
 	}
 	if len(in.Options) < 2 || len(in.Options) > 8 {
 		return "between 2 and 8 options are required"
 	}
 	for i := range in.Options {
-		in.Options[i].RU = strings.TrimSpace(in.Options[i].RU)
-		in.Options[i].EN = strings.TrimSpace(in.Options[i].EN)
-		if in.Options[i].RU == "" {
-			return fmt.Sprintf("option %d needs Russian text", i+1)
+		in.Options[i] = strings.TrimSpace(in.Options[i])
+		if in.Options[i] == "" {
+			return fmt.Sprintf("option %d is empty", i+1)
 		}
 	}
 	if in.CorrectIndex < 0 || in.CorrectIndex >= len(in.Options) {
@@ -49,8 +51,8 @@ func (s *Server) adminCreateExam(w http.ResponseWriter, r *http.Request) {
 	}
 	var id int64
 	if err := s.pool.QueryRow(r.Context(),
-		`INSERT INTO exams (title_ru, title_en, description_ru, description_en) VALUES ($1, $2, $3, $4) RETURNING id`,
-		in.TitleRu, in.TitleEn, in.DescriptionRu, in.DescriptionEn).Scan(&id); err != nil {
+		`INSERT INTO exams (level, title_ru, title_en, description_ru, description_en) VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+		in.Level, in.TitleRu, in.TitleEn, in.DescriptionRu, in.DescriptionEn).Scan(&id); err != nil {
 		fail(w, err)
 		return
 	}
@@ -76,8 +78,8 @@ func (s *Server) adminUpdateExam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	tag, err := s.pool.Exec(r.Context(),
-		`UPDATE exams SET title_ru = $2, title_en = $3, description_ru = $4, description_en = $5, updated_at = now()
-		 WHERE id = $1`, id, in.TitleRu, in.TitleEn, in.DescriptionRu, in.DescriptionEn)
+		`UPDATE exams SET level = $2, title_ru = $3, title_en = $4, description_ru = $5, description_en = $6, updated_at = now()
+		 WHERE id = $1`, id, in.Level, in.TitleRu, in.TitleEn, in.DescriptionRu, in.DescriptionEn)
 	if err != nil {
 		fail(w, err)
 		return
@@ -111,12 +113,15 @@ func (s *Server) adminDeleteExam(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (s *Server) adminListTasks(w http.ResponseWriter, r *http.Request) {
-	id, ok := pathID(w, r, "examID")
-	if !ok {
+// ---- task bank ----
+
+func (s *Server) adminListBankTasks(w http.ResponseWriter, r *http.Request) {
+	section := r.URL.Query().Get("section")
+	if section != "" && !sections[section] {
+		writeError(w, http.StatusBadRequest, "unknown section")
 		return
 	}
-	tasks, err := loadTasks(r.Context(), s.pool, id)
+	tasks, err := adminBankTasks(r.Context(), s.pool, section, strings.TrimSpace(r.URL.Query().Get("q")))
 	if err != nil {
 		fail(w, err)
 		return
@@ -125,10 +130,6 @@ func (s *Server) adminListTasks(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) adminCreateTask(w http.ResponseWriter, r *http.Request) {
-	examID, ok := pathID(w, r, "examID")
-	if !ok {
-		return
-	}
 	var in TaskInput
 	if !readJSON(w, r, &in) {
 		return
@@ -137,29 +138,16 @@ func (s *Server) adminCreateTask(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, msg)
 		return
 	}
-	var exists bool
-	if err := s.pool.QueryRow(r.Context(), `SELECT EXISTS (SELECT 1 FROM exams WHERE id = $1)`, examID).Scan(&exists); err != nil {
-		fail(w, err)
-		return
-	}
-	if !exists {
-		writeError(w, http.StatusNotFound, "exam not found")
-		return
-	}
 	var id int64
 	err := s.pool.QueryRow(r.Context(), `
-		INSERT INTO tasks (exam_id, position, section, prompt_ru, prompt_en, passage_ru, passage_en,
-		                   options, correct_index, explanation_ru, explanation_en)
-		VALUES ($1, COALESCE($2, (SELECT COALESCE(max(position), 0) + 1 FROM tasks WHERE exam_id = $1)),
-		        $3, $4, $5, $6, $7, $8, $9, $10, $11)
-		RETURNING id`,
-		examID, in.Position, in.Section, in.PromptRu, in.PromptEn, in.PassageRu, in.PassageEn,
-		in.Options, in.CorrectIndex, in.ExplanationRu, in.ExplanationEn).Scan(&id)
+		INSERT INTO tasks (section, prompt, passage, options, correct_index, explanation)
+		VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+		in.Section, in.Prompt, in.Passage, in.Options, in.CorrectIndex, in.Explanation).Scan(&id)
 	if err != nil {
 		fail(w, err)
 		return
 	}
-	s.writeTask(w, r, id, http.StatusCreated)
+	s.writeAdminTask(w, r, id, http.StatusCreated)
 }
 
 func (s *Server) adminUpdateTask(w http.ResponseWriter, r *http.Request) {
@@ -176,12 +164,9 @@ func (s *Server) adminUpdateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	tag, err := s.pool.Exec(r.Context(), `
-		UPDATE tasks SET position = COALESCE($2, position), section = $3, prompt_ru = $4, prompt_en = $5,
-		       passage_ru = $6, passage_en = $7, options = $8, correct_index = $9,
-		       explanation_ru = $10, explanation_en = $11
+		UPDATE tasks SET section = $2, prompt = $3, passage = $4, options = $5, correct_index = $6, explanation = $7
 		WHERE id = $1`,
-		id, in.Position, in.Section, in.PromptRu, in.PromptEn, in.PassageRu, in.PassageEn,
-		in.Options, in.CorrectIndex, in.ExplanationRu, in.ExplanationEn)
+		id, in.Section, in.Prompt, in.Passage, in.Options, in.CorrectIndex, in.Explanation)
 	if err != nil {
 		fail(w, err)
 		return
@@ -190,9 +175,10 @@ func (s *Server) adminUpdateTask(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "task not found")
 		return
 	}
-	s.writeTask(w, r, id, http.StatusOK)
+	s.writeAdminTask(w, r, id, http.StatusOK)
 }
 
+// adminDeleteTask removes the task from the bank and therefore from every exam that uses it.
 func (s *Server) adminDeleteTask(w http.ResponseWriter, r *http.Request) {
 	id, ok := pathID(w, r, "taskID")
 	if !ok {
@@ -210,16 +196,259 @@ func (s *Server) adminDeleteTask(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (s *Server) writeTask(w http.ResponseWriter, r *http.Request, id int64, status int) {
-	var t Task
-	var ci int
-	err := s.pool.QueryRow(r.Context(), `SELECT `+taskColumns+` FROM tasks WHERE id = $1`, id).Scan(
-		&t.ID, &t.ExamID, &t.Position, &t.Section, &t.PromptRu, &t.PromptEn, &t.PassageRu, &t.PassageEn,
-		&t.Options, &ci, &t.ExplanationRu, &t.ExplanationEn)
+func (s *Server) writeAdminTask(w http.ResponseWriter, r *http.Request, id int64, status int) {
+	rows, err := s.pool.Query(r.Context(), `SELECT `+taskColumns+`, `+usedInColumn+` FROM tasks t WHERE t.id = $1`, id)
 	if err != nil {
 		fail(w, err)
 		return
 	}
-	t.CorrectIndex = &ci
-	writeJSON(w, status, t)
+	tasks, err := scanAdminTasks(rows)
+	if err != nil || len(tasks) == 0 {
+		fail(w, err)
+		return
+	}
+	writeJSON(w, status, tasks[0])
+}
+
+// ---- exam <-> task links ----
+
+func (s *Server) adminListExamTasks(w http.ResponseWriter, r *http.Request) {
+	id, ok := pathID(w, r, "examID")
+	if !ok {
+		return
+	}
+	tasks, err := adminExamTasks(r.Context(), s.pool, id)
+	if err != nil {
+		fail(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, tasks)
+}
+
+// adminSetExamTasks replaces the exam's task list. The order of taskIds is the order in the exam, so one call
+// covers linking, unlinking and reordering.
+func (s *Server) adminSetExamTasks(w http.ResponseWriter, r *http.Request) {
+	examID, ok := pathID(w, r, "examID")
+	if !ok {
+		return
+	}
+	var in struct {
+		TaskIDs []int64 `json:"taskIds"`
+	}
+	if !readJSON(w, r, &in) {
+		return
+	}
+	seen := make(map[int64]bool, len(in.TaskIDs))
+	for _, id := range in.TaskIDs {
+		if seen[id] {
+			writeError(w, http.StatusBadRequest, "duplicate task in list")
+			return
+		}
+		seen[id] = true
+	}
+
+	ctx := r.Context()
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		fail(w, err)
+		return
+	}
+	defer tx.Rollback(ctx) //nolint:errcheck
+
+	var exists bool
+	if err := tx.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM exams WHERE id = $1)`, examID).Scan(&exists); err != nil {
+		fail(w, err)
+		return
+	}
+	if !exists {
+		writeError(w, http.StatusNotFound, "exam not found")
+		return
+	}
+	if len(in.TaskIDs) > 0 {
+		var found int
+		if err := tx.QueryRow(ctx, `SELECT count(*) FROM tasks WHERE id = ANY($1)`, in.TaskIDs).Scan(&found); err != nil {
+			fail(w, err)
+			return
+		}
+		if found != len(in.TaskIDs) {
+			writeError(w, http.StatusBadRequest, "some tasks do not exist")
+			return
+		}
+	}
+	if _, err := tx.Exec(ctx, `DELETE FROM exam_tasks WHERE exam_id = $1 AND NOT (task_id = ANY($2))`, examID, in.TaskIDs); err != nil {
+		fail(w, err)
+		return
+	}
+	for i, tid := range in.TaskIDs {
+		if _, err := tx.Exec(ctx, `
+			INSERT INTO exam_tasks (exam_id, task_id, position) VALUES ($1, $2, $3)
+			ON CONFLICT (exam_id, task_id) DO UPDATE SET position = EXCLUDED.position`, examID, tid, i+1); err != nil {
+			fail(w, err)
+			return
+		}
+	}
+	if err := tx.Commit(ctx); err != nil {
+		fail(w, err)
+		return
+	}
+	tasks, err := adminExamTasks(ctx, s.pool, examID)
+	if err != nil {
+		fail(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, tasks)
+}
+
+// adminBulkTasks applies delete / unlink / link to a set of bank tasks in one transaction.
+func (s *Server) adminBulkTasks(w http.ResponseWriter, r *http.Request) {
+	var in struct {
+		Action  string  `json:"action"`
+		TaskIDs []int64 `json:"taskIds"`
+		ExamID  int64   `json:"examId"`
+	}
+	if !readJSON(w, r, &in) {
+		return
+	}
+	if len(in.TaskIDs) == 0 {
+		writeError(w, http.StatusBadRequest, "no tasks selected")
+		return
+	}
+	ctx := r.Context()
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		fail(w, err)
+		return
+	}
+	defer tx.Rollback(ctx) //nolint:errcheck
+
+	var affected int64
+	switch in.Action {
+	case "delete":
+		tag, err := tx.Exec(ctx, `DELETE FROM tasks WHERE id = ANY($1)`, in.TaskIDs)
+		if err != nil {
+			fail(w, err)
+			return
+		}
+		affected = tag.RowsAffected()
+	case "unlink":
+		tag, err := tx.Exec(ctx, `DELETE FROM exam_tasks WHERE task_id = ANY($1)`, in.TaskIDs)
+		if err != nil {
+			fail(w, err)
+			return
+		}
+		affected = tag.RowsAffected()
+	case "link":
+		var exists bool
+		if err := tx.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM exams WHERE id = $1)`, in.ExamID).Scan(&exists); err != nil {
+			fail(w, err)
+			return
+		}
+		if !exists {
+			writeError(w, http.StatusNotFound, "exam not found")
+			return
+		}
+		// Append after the current last position, keeping the order of the request.
+		tag, err := tx.Exec(ctx, `
+			INSERT INTO exam_tasks (exam_id, task_id, position)
+			SELECT $1, t.id, COALESCE((SELECT max(position) FROM exam_tasks WHERE exam_id = $1), 0) + u.ord
+			FROM unnest($2::bigint[]) WITH ORDINALITY AS u(id, ord)
+			JOIN tasks t ON t.id = u.id
+			WHERE NOT EXISTS (SELECT 1 FROM exam_tasks et WHERE et.exam_id = $1 AND et.task_id = t.id)
+			ON CONFLICT (exam_id, task_id) DO NOTHING`, in.ExamID, in.TaskIDs)
+		if err != nil {
+			fail(w, err)
+			return
+		}
+		affected = tag.RowsAffected()
+	default:
+		writeError(w, http.StatusBadRequest, "unknown action")
+		return
+	}
+	if err := tx.Commit(ctx); err != nil {
+		fail(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]int64{"affected": affected})
+}
+
+const maxImportTasks = 500
+
+// adminImportTasks creates many tasks in one transaction, optionally appending them to an exam.
+func (s *Server) adminImportTasks(w http.ResponseWriter, r *http.Request) {
+	var in struct {
+		Tasks  []TaskInput `json:"tasks"`
+		ExamID int64       `json:"examId"`
+	}
+	if !readJSON(w, r, &in) {
+		return
+	}
+	if len(in.Tasks) == 0 {
+		writeError(w, http.StatusBadRequest, "no tasks to import")
+		return
+	}
+	if len(in.Tasks) > maxImportTasks {
+		writeError(w, http.StatusBadRequest, fmt.Sprintf("too many tasks: at most %d per import", maxImportTasks))
+		return
+	}
+	var problems []string
+	for i := range in.Tasks {
+		if msg := validateTask(&in.Tasks[i]); msg != "" {
+			if len(problems) == 5 {
+				problems = append(problems, "…")
+				break
+			}
+			problems = append(problems, fmt.Sprintf("task %d: %s", i+1, msg))
+		}
+	}
+	if len(problems) > 0 {
+		writeError(w, http.StatusBadRequest, strings.Join(problems, "; "))
+		return
+	}
+
+	ctx := r.Context()
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		fail(w, err)
+		return
+	}
+	defer tx.Rollback(ctx) //nolint:errcheck
+
+	next := 0
+	if in.ExamID != 0 {
+		var exists bool
+		if err := tx.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM exams WHERE id = $1)`, in.ExamID).Scan(&exists); err != nil {
+			fail(w, err)
+			return
+		}
+		if !exists {
+			writeError(w, http.StatusNotFound, "exam not found")
+			return
+		}
+		if err := tx.QueryRow(ctx, `SELECT COALESCE(max(position), 0) FROM exam_tasks WHERE exam_id = $1`, in.ExamID).Scan(&next); err != nil {
+			fail(w, err)
+			return
+		}
+	}
+	for _, t := range in.Tasks {
+		var id int64
+		if err := tx.QueryRow(ctx, `
+			INSERT INTO tasks (section, prompt, passage, options, correct_index, explanation)
+			VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+			t.Section, t.Prompt, t.Passage, t.Options, t.CorrectIndex, t.Explanation).Scan(&id); err != nil {
+			fail(w, err)
+			return
+		}
+		if in.ExamID != 0 {
+			next++
+			if _, err := tx.Exec(ctx, `INSERT INTO exam_tasks (exam_id, task_id, position) VALUES ($1, $2, $3)`, in.ExamID, id, next); err != nil {
+				fail(w, err)
+				return
+			}
+		}
+	}
+	if err := tx.Commit(ctx); err != nil {
+		fail(w, err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, map[string]int{"created": len(in.Tasks)})
 }

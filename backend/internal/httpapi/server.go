@@ -28,6 +28,12 @@ func New(pool *pgxpool.Pool, tokens *auth.Tokens, cookieSecure bool) http.Handle
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID, middleware.RealIP, middleware.Logger, middleware.Recoverer)
 
+	// chi's defaults are plain text; keep every API error in the same JSON shape.
+	r.NotFound(func(w http.ResponseWriter, _ *http.Request) { writeError(w, http.StatusNotFound, "not found") })
+	r.MethodNotAllowed(func(w http.ResponseWriter, _ *http.Request) {
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+	})
+
 	r.Route("/api", func(r chi.Router) {
 		r.Get("/health", func(w http.ResponseWriter, _ *http.Request) { writeJSON(w, 200, map[string]string{"status": "ok"}) })
 
@@ -39,15 +45,22 @@ func New(pool *pgxpool.Pool, tokens *auth.Tokens, cookieSecure bool) http.Handle
 		r.With(s.optionalAuth).Get("/exams", s.listExams)
 		r.With(s.optionalAuth).Get("/exams/{examID}", s.getExam)
 
+		r.Get("/settings", s.getSettings)
+
 		r.Group(func(r chi.Router) {
 			r.Use(s.requireAuth)
 			r.Get("/me", s.me)
-			r.Get("/me/attempts", s.myAttempts)
-			r.Post("/exams/{examID}/attempts", s.startAttempt)
-			r.Get("/attempts/{attemptID}", s.getAttempt)
-			r.Put("/attempts/{attemptID}/answers/{taskID}", s.saveAnswer)
-			r.Post("/attempts/{attemptID}/finish", s.finishAttempt)
-			r.Get("/attempts/{attemptID}/result", s.getResult)
+
+			// Taking exams is for learners only; admins manage content and users.
+			r.Group(func(r chi.Router) {
+				r.Use(s.requireLearner)
+				r.Get("/me/attempts", s.myAttempts)
+				r.Post("/exams/{examID}/attempts", s.startAttempt)
+				r.Get("/attempts/{attemptID}", s.getAttempt)
+				r.Put("/attempts/{attemptID}/answers/{taskID}", s.saveAnswer)
+				r.Post("/attempts/{attemptID}/finish", s.finishAttempt)
+				r.Get("/attempts/{attemptID}/result", s.getResult)
+			})
 		})
 
 		r.Route("/admin", func(r chi.Router) {
@@ -55,10 +68,20 @@ func New(pool *pgxpool.Pool, tokens *auth.Tokens, cookieSecure bool) http.Handle
 			r.Post("/exams", s.adminCreateExam)
 			r.Put("/exams/{examID}", s.adminUpdateExam)
 			r.Delete("/exams/{examID}", s.adminDeleteExam)
-			r.Get("/exams/{examID}/tasks", s.adminListTasks)
-			r.Post("/exams/{examID}/tasks", s.adminCreateTask)
+			r.Get("/exams/{examID}/tasks", s.adminListExamTasks)
+			r.Put("/exams/{examID}/tasks", s.adminSetExamTasks)
+
+			r.Get("/tasks", s.adminListBankTasks)
+			r.Post("/tasks", s.adminCreateTask)
+			r.Post("/tasks/bulk", s.adminBulkTasks)
+			r.Post("/tasks/import", s.adminImportTasks)
 			r.Put("/tasks/{taskID}", s.adminUpdateTask)
 			r.Delete("/tasks/{taskID}", s.adminDeleteTask)
+
+			r.Get("/users", s.adminListUsers)
+			r.Put("/users/{userID}/blocked", s.adminSetBlocked)
+			r.Post("/users/{userID}/reset-password", s.adminResetPassword)
+			r.Put("/settings", s.adminUpdateSettings)
 		})
 	})
 	return r
@@ -87,6 +110,8 @@ func (s *Server) optionalAuth(next http.Handler) http.Handler {
 	})
 }
 
+// requireAuth validates the access token and re-checks the account in the database, so blocking a user or
+// changing a role takes effect immediately instead of when the access token expires.
 func (s *Server) requireAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		c, ok := s.claimsFrom(r)
@@ -94,7 +119,27 @@ func (s *Server) requireAuth(next http.Handler) http.Handler {
 			writeError(w, http.StatusUnauthorized, "authentication required")
 			return
 		}
+		var blocked bool
+		err := s.pool.QueryRow(r.Context(), `SELECT role, blocked_at IS NOT NULL FROM users WHERE id = $1`, c.UserID).Scan(&c.Role, &blocked)
+		if errors.Is(err, pgx.ErrNoRows) || (err == nil && blocked) {
+			writeError(w, http.StatusUnauthorized, "account unavailable")
+			return
+		}
+		if err != nil {
+			fail(w, err)
+			return
+		}
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), ctxKey{}, c)))
+	})
+}
+
+func (s *Server) requireLearner(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if c, _ := r.Context().Value(ctxKey{}).(auth.Claims); c.Role == auth.RoleAdmin {
+			writeError(w, http.StatusForbidden, "admins cannot take exams")
+			return
+		}
+		next.ServeHTTP(w, r)
 	})
 }
 
@@ -130,7 +175,12 @@ func writeError(w http.ResponseWriter, status int, msg string) {
 func readJSON(w http.ResponseWriter, r *http.Request, dst any) bool {
 	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 	if err := json.NewDecoder(r.Body).Decode(dst); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		msg := "invalid JSON body"
+		var typeErr *json.UnmarshalTypeError
+		if errors.As(err, &typeErr) && typeErr.Field != "" {
+			msg += ": wrong type for field " + typeErr.Field
+		}
+		writeError(w, http.StatusBadRequest, msg)
 		return false
 	}
 	return true

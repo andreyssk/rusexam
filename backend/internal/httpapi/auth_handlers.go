@@ -24,6 +24,15 @@ func (s *Server) register(w http.ResponseWriter, r *http.Request) {
 	if !readJSON(w, r, &in) {
 		return
 	}
+	allow, err := s.allowSignups(r)
+	if err != nil {
+		fail(w, err)
+		return
+	}
+	if !allow {
+		writeError(w, http.StatusForbidden, "sign-ups are currently closed")
+		return
+	}
 	in.Username = strings.TrimSpace(in.Username)
 	if !usernameRe.MatchString(in.Username) {
 		writeError(w, http.StatusBadRequest, "username must be 3-32 characters: letters, digits, _ . -")
@@ -60,18 +69,23 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var (
-		u    User
-		hash string
+		u       User
+		hash    string
+		blocked bool
 	)
 	err := s.pool.QueryRow(r.Context(),
-		`SELECT id, username, role, password_hash FROM users WHERE lower(username) = lower($1)`,
-		strings.TrimSpace(in.Username)).Scan(&u.ID, &u.Username, &u.Role, &hash)
+		`SELECT id, username, role, password_hash, blocked_at IS NOT NULL FROM users WHERE lower(username) = lower($1)`,
+		strings.TrimSpace(in.Username)).Scan(&u.ID, &u.Username, &u.Role, &hash, &blocked)
 	if errors.Is(err, pgx.ErrNoRows) || (err == nil && !auth.CheckPassword(hash, in.Password)) {
 		writeError(w, http.StatusUnauthorized, "invalid username or password")
 		return
 	}
 	if err != nil {
 		fail(w, err)
+		return
+	}
+	if blocked {
+		writeError(w, http.StatusForbidden, "this account is blocked")
 		return
 	}
 	s.startSession(w, r, http.StatusOK, u)

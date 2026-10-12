@@ -118,3 +118,22 @@
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
 }
+
+/* Streak celebration (answers correct in a row). */
+@keyframes confetti-fall {
+  from { transform: translate3d(0, -10vh, 0) rotate(0deg); opacity: 1; }
+  to { transform: translate3d(var(--dx), 105vh, 0) rotate(var(--rot)); opacity: 0.9; }
+}
+@keyframes streak-pop {
+  0% { transform: scale(0.6); opacity: 0; }
+  12% { transform: scale(1.08); opacity: 1; }
+  22% { transform: scale(1); }
+  85% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(0.96); opacity: 0; }
+}
+.confetti-piece { animation: confetti-fall var(--dur) ease-in var(--delay) forwards; }
+.streak-card { animation: streak-pop 3s ease-out forwards; }
+@media (prefers-reduced-motion: reduce) {
+  .confetti-piece { display: none; }
+  .streak-card { animation: none; }
+}

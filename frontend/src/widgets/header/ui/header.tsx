@@ -1,5 +1,5 @@
 import { GraduationCap, User as UserIcon } from 'lucide-react'
-import { Link, NavLink } from 'react-router-dom'
+import { Link, NavLink, useLocation } from 'react-router-dom'
 import { cn } from '@/shared/lib/cn'
 import { useI18n } from '@/shared/lib/i18n'
 import { Button } from '@/shared/ui/button'
@@ -7,7 +7,7 @@ import { LanguageSwitch } from '@/features/switch-language'
 import { ThemeSwitch } from '@/features/switch-theme'
 import { useAuth } from '@/entities/user'
 
-const link = ({ isActive }: { isActive: boolean }) =>
+const link = (isActive: boolean) =>
   cn(
     'rounded-xl px-3 py-2 text-sm font-extrabold uppercase tracking-wide',
     isActive ? 'bg-accent-soft text-accent' : 'text-muted-foreground hover:bg-muted',
@@ -16,6 +16,7 @@ const link = ({ isActive }: { isActive: boolean }) =>
 export function Header() {
   const { t } = useI18n()
   const { user, logout } = useAuth()
+  const location = useLocation()
   return (
     <header className="border-b-2 bg-card">
       <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
@@ -24,18 +25,29 @@ export function Header() {
           {t('app.name')}
         </Link>
         <nav className="flex flex-wrap items-center gap-1">
-          <NavLink to="/" end className={link}>
-            {t('nav.exams')}
-          </NavLink>
-          {user && (
-            <NavLink to="/history" className={link}>
-              {t('nav.history')}
-            </NavLink>
-          )}
-          {user?.role === 'admin' && (
-            <NavLink to="/admin" className={link}>
-              {t('nav.admin')}
-            </NavLink>
+          {user?.role === 'admin' ? (
+            <>
+              <Link to="/admin" className={link(location.pathname === '/admin' || location.pathname.startsWith('/admin/exams'))}>
+                {t('nav.exams')}
+              </Link>
+              <NavLink to="/admin/tasks" className={({ isActive }) => link(isActive)}>
+                {t('nav.tasks')}
+              </NavLink>
+              <NavLink to="/admin/users" className={({ isActive }) => link(isActive)}>
+                {t('nav.users')}
+              </NavLink>
+            </>
+          ) : (
+            <>
+              <NavLink to="/" end className={({ isActive }) => link(isActive)}>
+                {t('nav.exams')}
+              </NavLink>
+              {user && (
+                <NavLink to="/history" className={({ isActive }) => link(isActive)}>
+                  {t('nav.history')}
+                </NavLink>
+              )}
+            </>
           )}
         </nav>
         <div className="ml-auto flex items-center gap-3">

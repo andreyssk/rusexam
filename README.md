@@ -24,6 +24,17 @@ The admin account comes from `ADMIN_USERNAME` / `ADMIN_PASSWORD` and is re-synce
 - On page load the session is restored by a silent refresh; the client also refreshes a minute before expiry,
   and replays a request once if it gets a 401. Set `COOKIE_SECURE=true` when serving over HTTPS.
 
+## Roles
+
+- **Learners** sign up, take exams in training or exam mode and see their History.
+- **Admin** (from `ADMIN_USERNAME` / `ADMIN_PASSWORD`) cannot take exams and has no History. The admin area has:
+  - **Exams:** create, edit, delete; build each exam from the task bank (add, remove, reorder).
+  - **Tasks:** the task bank. Tasks are independent of exams; one exam can have any number of tasks and one task can
+    be in any number of exams. Editing a task changes it in every exam that uses it; deleting it removes it everywhere.
+  - **Users:** block/unblock learners (immediate), reset a password (a one-time temporary password is shown and the user is
+    signed out everywhere), and the **Allow new users** switch that opens/closes sign-ups.
+- Every admin write shows a loading state on its button and a success/error snackbar.
+
 ## Behaviour
 
 - **Training mode:** each answer is final and shows the correct answer plus an optional explanation.

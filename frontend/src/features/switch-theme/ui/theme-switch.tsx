@@ -1,4 +1,4 @@
-import { Palette } from 'lucide-react'
+import { ChevronDown, Palette } from 'lucide-react'
 import { useI18n } from '@/shared/lib/i18n'
 import { THEMES, useTheme, type Theme } from '@/shared/lib/theme'
 
@@ -6,13 +6,14 @@ export function ThemeSwitch() {
   const { t } = useI18n()
   const { theme, setTheme } = useTheme()
   return (
-    <label className="flex cursor-pointer items-center gap-1.5 rounded-xl border-2 bg-card px-2.5 py-1.5 text-xs font-bold text-muted-foreground">
-      <Palette size={14} aria-hidden="true" />
-      <span className="sr-only">{t('theme.label')}</span>
+    // The select fills the whole control, so a click anywhere on it opens the list.
+    <div className="relative">
+      <Palette size={14} aria-hidden="true" className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
       <select
+        aria-label={t('theme.label')}
         value={theme}
         onChange={(e) => setTheme(e.target.value as Theme)}
-        className="cursor-pointer bg-transparent text-foreground focus-visible:outline-2 focus-visible:outline-primary"
+        className="h-9 w-full cursor-pointer appearance-none rounded-xl border-2 bg-card py-1.5 pl-8 pr-8 text-xs font-bold text-foreground hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       >
         {THEMES.map((th) => (
           <option key={th} value={th}>
@@ -20,6 +21,7 @@ export function ThemeSwitch() {
           </option>
         ))}
       </select>
-    </label>
+      <ChevronDown size={14} aria-hidden="true" className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+    </div>
   )
 }

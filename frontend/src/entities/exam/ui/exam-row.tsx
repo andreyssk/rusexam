@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import type { Exam } from '@/shared/api'
 import { formatPercent } from '@/shared/lib/format'
 import { useI18n } from '@/shared/lib/i18n'
+import { Badge } from '@/shared/ui/badge'
 import { Progress } from '@/shared/ui/progress'
 
 export function ExamRow({ exam, actions }: { exam: Exam; actions?: ReactNode }) {
@@ -12,6 +13,9 @@ export function ExamRow({ exam, actions }: { exam: Exam; actions?: ReactNode }) 
   return (
     <li className="flex flex-wrap items-center gap-x-5 gap-y-3 rounded-2xl border-2 border-b-4 bg-card px-4 py-3">
       <div className="min-w-0 flex-1 basis-56">
+        <Badge translate="no" className="mb-1 bg-accent-soft text-accent">
+          {t(`level.${exam.level}`)}
+        </Badge>
         <h2 className="truncate text-base font-extrabold leading-snug" title={pick(exam.titleRu, exam.titleEn)}>
           {pick(exam.titleRu, exam.titleEn)}
         </h2>

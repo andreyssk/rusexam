@@ -13,6 +13,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** @description Responds 403 when an admin has closed sign-ups (see /settings). */
         post: operations["register"];
         delete?: never;
         options?: never;
@@ -238,9 +239,63 @@ export interface paths {
             };
             cookie?: never;
         };
+        /** @description The exam's tasks in order, including answers. */
+        get: operations["adminListExamTasks"];
+        /** @description Replaces the exam's task list. The order of taskIds is the order inside the exam, so this one call links, unlinks and reorders. The tasks themselves are not changed or deleted. */
+        put: operations["adminSetExamTasks"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The whole task bank, newest first. */
         get: operations["adminListTasks"];
         put?: never;
+        /** @description Creates a task in the bank. Link it to exams with PUT /admin/exams/{examID}/tasks. */
         post: operations["adminCreateTask"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/tasks/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Creates many tasks at once, all or nothing: if any task is invalid, nothing is created and the error names the offending tasks. When examId is given the new tasks are also appended to that exam. */
+        post: operations["adminImportTasks"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/tasks/bulk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Applies one action to several bank tasks at once. delete removes them from the bank and every exam; unlink removes them from every exam (they stay in the bank); link appends them to the exam given by examId, skipping those already in it. */
+        post: operations["adminBulkTasks"];
         delete?: never;
         options?: never;
         head?: never;
@@ -257,9 +312,98 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
+        /** @description Edits the task everywhere it is used. */
         put: operations["adminUpdateTask"];
         post?: never;
+        /** @description Deletes the task from the bank and from every exam that uses it. */
         delete: operations["adminDeleteTask"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Public app settings. */
+        get: operations["getSettings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["adminUpdateSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["adminListUsers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/users/{userID}/blocked": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userID: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** @description Blocks or unblocks a learner. Blocking ends their sessions immediately. Admin accounts cannot be blocked. */
+        put: operations["adminSetUserBlocked"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/users/{userID}/reset-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userID: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Sets a random temporary password and signs the user out everywhere. The password is returned once. */
+        post: operations["adminResetUserPassword"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -291,40 +435,58 @@ export interface components {
             token: string;
             user: components["schemas"]["User"];
         };
-        Option: {
-            ru: string;
-            en?: string;
-        };
         /** @description Answer fields (correctIndex, explanations) are only present when the caller is allowed to see them: admin views, training-mode feedback, and finished attempts. */
         Task: {
             /** Format: int64 */
             id: number;
-            /** Format: int64 */
-            examId: number;
-            position: number;
             section: components["schemas"]["Section"];
-            promptRu: string;
-            promptEn?: string;
-            passageRu?: string;
-            passageEn?: string;
-            options: components["schemas"]["Option"][];
+            /** @description Russian text of the question. */
+            prompt: string;
+            /** @description Optional Russian text to read. */
+            passage?: string;
+            options: string[];
             correctIndex?: number;
-            explanationRu?: string;
-            explanationEn?: string;
+            explanation?: string;
         };
         TaskInput: {
             section: components["schemas"]["Section"];
-            position?: number | null;
-            promptRu?: string;
-            promptEn?: string;
-            passageRu?: string;
-            passageEn?: string;
-            options: components["schemas"]["Option"][];
+            prompt: string;
+            passage?: string;
+            options: string[];
             correctIndex: number;
-            explanationRu?: string;
-            explanationEn?: string;
+            explanation?: string;
         };
+        ExamRef: {
+            /** Format: int64 */
+            id: number;
+            titleRu: string;
+            titleEn: string;
+        };
+        /** @description A task together with the exams it is linked to. Tasks live in a bank and can be used by any number of exams. */
+        AdminTask: components["schemas"]["Task"] & {
+            usedIn: components["schemas"]["ExamRef"][];
+        };
+        AdminUser: {
+            /** Format: int64 */
+            id: number;
+            username: string;
+            /** @enum {string} */
+            role: "user" | "admin";
+            blocked: boolean;
+            /** Format: date-time */
+            createdAt: string;
+            completedAttempts: number;
+        };
+        Settings: {
+            allowSignups: boolean;
+        };
+        /**
+         * @description Which exam the variant prepares for - РВП, ВНЖ or Гражданство.
+         * @enum {string}
+         */
+        Level: "rvp" | "vnzh" | "citizenship";
         ExamInput: {
+            level: components["schemas"]["Level"];
             titleRu?: string;
             titleEn?: string;
             descriptionRu?: string;
@@ -348,6 +510,7 @@ export interface components {
         Exam: {
             /** Format: int64 */
             id: number;
+            level: components["schemas"]["Level"];
             titleRu: string;
             titleEn: string;
             descriptionRu: string;
@@ -385,8 +548,7 @@ export interface components {
             selectedIndex: number;
             isCorrect?: boolean;
             correctIndex?: number;
-            explanationRu?: string;
-            explanationEn?: string;
+            explanation?: string;
         };
         AttemptState: {
             attempt: components["schemas"]["Attempt"];
@@ -774,7 +936,7 @@ export interface operations {
             default: components["responses"]["Error"];
         };
     };
-    adminListTasks: {
+    adminListExamTasks: {
         parameters: {
             query?: never;
             header?: never;
@@ -791,7 +953,61 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Task"][];
+                    "application/json": components["schemas"]["AdminTask"][];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    adminSetExamTasks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                examID: components["parameters"]["ExamID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    taskIds: number[];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminTask"][];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    adminListTasks: {
+        parameters: {
+            query?: {
+                section?: components["schemas"]["Section"];
+                /** @description Case-insensitive search in the question text. */
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminTask"][];
                 };
             };
             default: components["responses"]["Error"];
@@ -801,9 +1017,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
-            path: {
-                examID: components["parameters"]["ExamID"];
-            };
+            path?: never;
             cookie?: never;
         };
         requestBody: {
@@ -818,7 +1032,75 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Task"];
+                    "application/json": components["schemas"]["AdminTask"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    adminImportTasks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    tasks: components["schemas"]["TaskInput"][];
+                    /** Format: int64 */
+                    examId?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        created: number;
+                    };
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    adminBulkTasks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    action: "delete" | "unlink" | "link";
+                    taskIds: number[];
+                    /**
+                     * Format: int64
+                     * @description Required for link.
+                     */
+                    examId?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Number of tasks actually changed. */
+                        affected: number;
+                    };
                 };
             };
             default: components["responses"]["Error"];
@@ -845,7 +1127,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Task"];
+                    "application/json": components["schemas"]["AdminTask"];
                 };
             };
             default: components["responses"]["Error"];
@@ -868,6 +1150,125 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Settings"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    adminUpdateSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Settings"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Settings"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    adminListUsers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUser"][];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    adminSetUserBlocked: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userID: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    blocked: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Updated */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    adminResetUserPassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userID: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        temporaryPassword: string;
+                    };
+                };
             };
             default: components["responses"]["Error"];
         };

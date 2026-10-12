@@ -2,50 +2,51 @@ package httpapi
 
 import "time"
 
-var sections = map[string]bool{"vocabulary": true, "grammar": true, "reading": true, "history": true, "law": true}
+var levels = map[string]bool{"rvp": true, "vnzh": true, "citizenship": true}
 
-type Option struct {
-	RU string `json:"ru"`
-	EN string `json:"en,omitempty"`
-}
+var sections = map[string]bool{"vocabulary": true, "grammar": true, "reading": true, "history": true, "law": true}
 
 // Task is used for both public and admin views. Answer-revealing fields are
 // pointers/omitempty and are cleared for public views until allowed.
 type Task struct {
-	ID            int64    `json:"id"`
-	ExamID        int64    `json:"examId"`
-	Position      int      `json:"position"`
-	Section       string   `json:"section"`
-	PromptRu      string   `json:"promptRu"`
-	PromptEn      string   `json:"promptEn,omitempty"`
-	PassageRu     string   `json:"passageRu,omitempty"`
-	PassageEn     string   `json:"passageEn,omitempty"`
-	Options       []Option `json:"options"`
-	CorrectIndex  *int     `json:"correctIndex,omitempty"`
-	ExplanationRu string   `json:"explanationRu,omitempty"`
-	ExplanationEn string   `json:"explanationEn,omitempty"`
+	ID           int64    `json:"id"`
+	Section      string   `json:"section"`
+	Prompt       string   `json:"prompt"`
+	Passage      string   `json:"passage,omitempty"`
+	Options      []string `json:"options"`
+	CorrectIndex *int     `json:"correctIndex,omitempty"`
+	Explanation  string   `json:"explanation,omitempty"`
+}
+
+type ExamRef struct {
+	ID      int64  `json:"id"`
+	TitleRu string `json:"titleRu"`
+	TitleEn string `json:"titleEn"`
+}
+
+// AdminTask is a task as the admin sees it: with the exams it is linked to.
+type AdminTask struct {
+	Task
+	UsedIn []ExamRef `json:"usedIn"`
 }
 
 func (t Task) hidden() Task {
 	t.CorrectIndex = nil
-	t.ExplanationRu, t.ExplanationEn = "", ""
+	t.Explanation = ""
 	return t
 }
 
 type TaskInput struct {
-	Section       string   `json:"section"`
-	Position      *int     `json:"position"`
-	PromptRu      string   `json:"promptRu"`
-	PromptEn      string   `json:"promptEn"`
-	PassageRu     string   `json:"passageRu"`
-	PassageEn     string   `json:"passageEn"`
-	Options       []Option `json:"options"`
-	CorrectIndex  int      `json:"correctIndex"`
-	ExplanationRu string   `json:"explanationRu"`
-	ExplanationEn string   `json:"explanationEn"`
+	Section      string   `json:"section"`
+	Prompt       string   `json:"prompt"`
+	Passage      string   `json:"passage"`
+	Options      []string `json:"options"`
+	CorrectIndex int      `json:"correctIndex"`
+	Explanation  string   `json:"explanation"`
 }
 
 type ExamInput struct {
+	Level         string `json:"level"`
 	TitleRu       string `json:"titleRu"`
 	TitleEn       string `json:"titleEn"`
 	DescriptionRu string `json:"descriptionRu"`
@@ -65,6 +66,7 @@ type MyExamStats struct {
 
 type Exam struct {
 	ID            int64          `json:"id"`
+	Level         string         `json:"level"`
 	TitleRu       string         `json:"titleRu"`
 	TitleEn       string         `json:"titleEn"`
 	DescriptionRu string         `json:"descriptionRu"`
@@ -95,8 +97,7 @@ type AnswerState struct {
 	SelectedIndex int    `json:"selectedIndex"`
 	IsCorrect     *bool  `json:"isCorrect,omitempty"`
 	CorrectIndex  *int   `json:"correctIndex,omitempty"`
-	ExplanationRu string `json:"explanationRu,omitempty"`
-	ExplanationEn string `json:"explanationEn,omitempty"`
+	Explanation   string `json:"explanation,omitempty"`
 }
 
 type AttemptState struct {
@@ -132,4 +133,17 @@ type User struct {
 type AuthResponse struct {
 	Token string `json:"token"`
 	User  User   `json:"user"`
+}
+
+type AdminUser struct {
+	ID                int64     `json:"id"`
+	Username          string    `json:"username"`
+	Role              string    `json:"role"`
+	Blocked           bool      `json:"blocked"`
+	CreatedAt         time.Time `json:"createdAt"`
+	CompletedAttempts int       `json:"completedAttempts"`
+}
+
+type Settings struct {
+	AllowSignups bool `json:"allowSignups"`
 }

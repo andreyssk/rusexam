@@ -104,16 +104,17 @@ func (s *Server) refresh(w http.ResponseWriter, r *http.Request) {
 		tokenID   int64
 		expiresAt time.Time
 		revokedAt *time.Time
+		blocked   bool
 		u         User
 	)
 	err = tx.QueryRow(ctx, `
-		SELECT rt.id, rt.expires_at, rt.revoked_at, u.id, u.username, u.role
+		SELECT rt.id, rt.expires_at, rt.revoked_at, u.blocked_at IS NOT NULL, u.id, u.username, u.role
 		FROM refresh_tokens rt JOIN users u ON u.id = rt.user_id
 		WHERE rt.token_hash = $1
-		FOR UPDATE OF rt`, hash).Scan(&tokenID, &expiresAt, &revokedAt, &u.ID, &u.Username, &u.Role)
+		FOR UPDATE OF rt`, hash).Scan(&tokenID, &expiresAt, &revokedAt, &blocked, &u.ID, &u.Username, &u.Role)
 	now := time.Now()
 	invalid := errors.Is(err, pgx.ErrNoRows) ||
-		(err == nil && (now.After(expiresAt) || (revokedAt != nil && now.Sub(*revokedAt) > rotationGrace)))
+		(err == nil && (blocked || now.After(expiresAt) || (revokedAt != nil && now.Sub(*revokedAt) > rotationGrace)))
 	if invalid {
 		s.clearRefreshCookie(w)
 		writeError(w, http.StatusUnauthorized, "session expired")

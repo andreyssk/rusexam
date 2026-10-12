@@ -77,7 +77,7 @@ func (s *Server) startAttempt(w http.ResponseWriter, r *http.Request) {
 	}
 	var tasksCount int
 	if err := s.pool.QueryRow(r.Context(),
-		`SELECT (SELECT count(*) FROM tasks WHERE exam_id = e.id)::int FROM exams e WHERE e.id = $1`,
+		`SELECT (SELECT count(*) FROM exam_tasks WHERE exam_id = e.id)::int FROM exams e WHERE e.id = $1`,
 		examID).Scan(&tasksCount); err != nil {
 		fail(w, err)
 		return
@@ -128,7 +128,7 @@ func loadAnswers(ctx context.Context, q querier, attemptID int64) ([]savedAnswer
 func feedback(t Task, selected int) AnswerState {
 	ok := t.CorrectIndex != nil && *t.CorrectIndex == selected
 	return AnswerState{TaskID: t.ID, SelectedIndex: selected, IsCorrect: &ok, CorrectIndex: t.CorrectIndex,
-		ExplanationRu: t.ExplanationRu, ExplanationEn: t.ExplanationEn}
+		Explanation: t.Explanation}
 }
 
 func (s *Server) getAttempt(w http.ResponseWriter, r *http.Request) {
@@ -197,8 +197,10 @@ func (s *Server) saveAnswer(w http.ResponseWriter, r *http.Request) {
 	var t Task
 	var ci int
 	err := s.pool.QueryRow(r.Context(),
-		`SELECT id, options, correct_index, explanation_ru, explanation_en FROM tasks WHERE id = $1 AND exam_id = $2`,
-		taskID, a.ExamID).Scan(&t.ID, &t.Options, &ci, &t.ExplanationRu, &t.ExplanationEn)
+		`SELECT t.id, t.options, t.correct_index, t.explanation
+		 FROM tasks t JOIN exam_tasks et ON et.task_id = t.id
+		 WHERE t.id = $1 AND et.exam_id = $2`,
+		taskID, a.ExamID).Scan(&t.ID, &t.Options, &ci, &t.Explanation)
 	if err != nil {
 		fail(w, err)
 		return
@@ -258,9 +260,10 @@ func (s *Server) finishAttempt(w http.ResponseWriter, r *http.Request) {
 		WITH c AS (
 			SELECT count(t.id)::int AS total,
 			       count(*) FILTER (WHERE aa.selected_index = t.correct_index)::int AS correct
-			FROM tasks t
+			FROM exam_tasks et
+			JOIN tasks t ON t.id = et.task_id
 			LEFT JOIN attempt_answers aa ON aa.task_id = t.id AND aa.attempt_id = $1
-			WHERE t.exam_id = $2
+			WHERE et.exam_id = $2
 		)
 		UPDATE attempts SET status = 'completed', finished_at = now(), duration_seconds = $3,
 		       correct_count = c.correct, total_count = c.total,

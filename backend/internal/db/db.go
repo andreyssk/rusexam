@@ -50,12 +50,14 @@ func EnsureAdmin(ctx context.Context, pool *pgxpool.Pool, username, password str
 	}
 	_, err = pool.Exec(ctx, `
 		INSERT INTO users (username, password_hash, role) VALUES ($1, $2, 'admin')
-		ON CONFLICT (lower(username)) DO UPDATE SET password_hash = EXCLUDED.password_hash, role = 'admin'`,
+		ON CONFLICT (lower(username)) DO UPDATE
+		SET password_hash = EXCLUDED.password_hash, role = 'admin', blocked_at = NULL`,
 		username, hash)
 	return err
 }
 
 type seedExam struct {
+	Level         string     `json:"level"`
 	TitleRu       string     `json:"titleRu"`
 	TitleEn       string     `json:"titleEn"`
 	DescriptionRu string     `json:"descriptionRu"`
@@ -64,15 +66,12 @@ type seedExam struct {
 }
 
 type seedTask struct {
-	Section       string            `json:"section"`
-	PromptRu      string            `json:"promptRu"`
-	PromptEn      string            `json:"promptEn"`
-	PassageRu     string            `json:"passageRu"`
-	PassageEn     string            `json:"passageEn"`
-	Options       []json.RawMessage `json:"options"`
-	CorrectIndex  int               `json:"correctIndex"`
-	ExplanationRu string            `json:"explanationRu"`
-	ExplanationEn string            `json:"explanationEn"`
+	Section      string   `json:"section"`
+	Prompt       string   `json:"prompt"`
+	Passage      string   `json:"passage"`
+	Options      []string `json:"options"`
+	CorrectIndex int      `json:"correctIndex"`
+	Explanation  string   `json:"explanation"`
 }
 
 // SeedSamples inserts the bundled sample exams, but only into an empty exams table.
@@ -96,9 +95,9 @@ func SeedSamples(ctx context.Context, pool *pgxpool.Pool) error {
 	for _, e := range exams {
 		var examID int64
 		err := tx.QueryRow(ctx, `
-			INSERT INTO exams (title_ru, title_en, description_ru, description_en)
-			VALUES ($1, $2, $3, $4) RETURNING id`,
-			e.TitleRu, e.TitleEn, e.DescriptionRu, e.DescriptionEn).Scan(&examID)
+			INSERT INTO exams (level, title_ru, title_en, description_ru, description_en)
+			VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+			e.Level, e.TitleRu, e.TitleEn, e.DescriptionRu, e.DescriptionEn).Scan(&examID)
 		if err != nil {
 			return err
 		}
@@ -107,13 +106,16 @@ func SeedSamples(ctx context.Context, pool *pgxpool.Pool) error {
 			if err != nil {
 				return err
 			}
-			_, err = tx.Exec(ctx, `
-				INSERT INTO tasks (exam_id, position, section, prompt_ru, prompt_en, passage_ru, passage_en,
-				                   options, correct_index, explanation_ru, explanation_en)
-				VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
-				examID, i+1, t.Section, t.PromptRu, t.PromptEn, t.PassageRu, t.PassageEn,
-				opts, t.CorrectIndex, t.ExplanationRu, t.ExplanationEn)
+			var taskID int64
+			err = tx.QueryRow(ctx, `
+				INSERT INTO tasks (section, prompt, passage, options, correct_index, explanation)
+				VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+				t.Section, t.Prompt, t.Passage, opts, t.CorrectIndex, t.Explanation).Scan(&taskID)
 			if err != nil {
+				return err
+			}
+			if _, err := tx.Exec(ctx, `INSERT INTO exam_tasks (exam_id, task_id, position) VALUES ($1, $2, $3)`,
+				examID, taskID, i+1); err != nil {
 				return err
 			}
 		}

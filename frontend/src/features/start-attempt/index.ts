@@ -1,1 +1,1 @@
-export { StartAttempt } from './ui/start-attempt'
+export { RetryAttempt, StartAttempt } from './ui/start-attempt'

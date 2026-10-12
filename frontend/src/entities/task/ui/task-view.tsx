@@ -9,35 +9,28 @@ type Props = {
   /** Set once the correct answer may be shown (training feedback). */
   correctIndex?: number
   disabled?: boolean
-  showTranslation?: boolean
   onSelect?: (index: number) => void
 }
 
 const LETTERS = 'ABCDEFGH'
 
-export function TaskView({ task, selectedIndex, correctIndex, disabled, showTranslation, onSelect }: Props) {
+export function TaskView({ task, selectedIndex, correctIndex, disabled, onSelect }: Props) {
   const { t } = useI18n()
   const revealed = correctIndex !== undefined
 
   return (
     <div className="space-y-4">
-      {task.passageRu && (
+      {task.passage && (
         <figure className="rounded-2xl border-2 border-b-4 bg-muted p-4">
           <figcaption className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
             {t('run.passage')}
           </figcaption>
-          <p lang="ru" className="text-base leading-relaxed">{task.passageRu}</p>
-          {showTranslation && task.passageEn && (
-            <p lang="en" className="mt-2 text-sm font-semibold text-muted-foreground">{task.passageEn}</p>
-          )}
+          <p lang="ru" translate="no" className="text-base leading-relaxed">{task.passage}</p>
         </figure>
       )}
 
       <div>
-        <h2 lang="ru" className="text-2xl font-extrabold leading-snug">{task.promptRu}</h2>
-        {showTranslation && task.promptEn && (
-          <p lang="en" className="mt-1 text-sm font-semibold text-muted-foreground">{task.promptEn}</p>
-        )}
+        <h2 lang="ru" translate="no" className="text-2xl font-extrabold leading-snug">{task.prompt}</h2>
       </div>
 
       <ul className="space-y-2" role="radiogroup">
@@ -71,12 +64,7 @@ export function TaskView({ task, selectedIndex, correctIndex, disabled, showTran
                 >
                   {isCorrect ? <Check size={14} aria-label="correct" /> : isWrong ? <X size={14} aria-label="wrong" /> : LETTERS[i]}
                 </span>
-                <span>
-                  <span lang="ru" className="block text-lg">{opt.ru}</span>
-                  {showTranslation && opt.en && (
-                    <span lang="en" className="block text-sm font-semibold text-muted-foreground">{opt.en}</span>
-                  )}
-                </span>
+                <span lang="ru" translate="no" className="block text-lg">{opt}</span>
               </button>
             </li>
           )

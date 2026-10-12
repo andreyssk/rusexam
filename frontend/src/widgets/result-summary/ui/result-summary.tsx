@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Progress } from '@/shared/ui/progress'
 import { ErrorMessage, Loading } from '@/shared/ui/states'
 import { useResult } from '@/entities/attempt'
-import { StartAttempt } from '@/features/start-attempt'
+import { RetryAttempt, StartAttempt } from '@/features/start-attempt'
 
 export function ResultSummary({ attemptId }: { attemptId: number }) {
   const { t, pick } = useI18n()
@@ -28,7 +28,7 @@ export function ResultSummary({ attemptId }: { attemptId: number }) {
       </div>
 
       <Card>
-        <CardContent className="grid gap-6 pt-5 sm:grid-cols-[auto_1fr]">
+        <CardContent className="grid items-center gap-6 pt-5 sm:grid-cols-[auto_1fr_auto]">
           <div className="text-center sm:text-left">
             <p className="text-sm text-muted-foreground">{t('result.score')}</p>
             <p className="text-5xl font-extrabold tabular-nums text-primary">{formatPercent(attempt.scorePercent)}</p>
@@ -44,6 +44,9 @@ export function ResultSummary({ attemptId }: { attemptId: number }) {
               <dd className="text-lg font-extrabold">{t(`mode.${attempt.mode}`)}</dd>
             </div>
           </dl>
+          <div className="sm:justify-self-end">
+            <RetryAttempt examId={attempt.examId} mode={attempt.mode} />
+          </div>
         </CardContent>
       </Card>
 
@@ -73,29 +76,29 @@ export function ResultSummary({ attemptId }: { attemptId: number }) {
         <h2 className="text-lg font-extrabold">{t('result.review')}</h2>
         {items.map((it, n) => {
           const correctIdx = it.task.correctIndex
-          const expl = pick(it.task.explanationRu, it.task.explanationEn)
+          const expl = it.task.explanation
           return (
             <Card key={it.task.id} className={cn('border-l-4', it.isCorrect ? 'border-l-success' : 'border-l-destructive')}>
               <CardContent className="space-y-2 pt-5 text-sm">
                 <div className="flex items-start gap-2">
                   <Badge>{n + 1}</Badge>
-                  <p lang="ru" className="font-medium">{it.task.promptRu}</p>
+                  <p lang="ru" translate="no" className="font-medium">{it.task.prompt}</p>
                 </div>
                 <p>
                   <span className="text-muted-foreground">{t('result.yourAnswer')}: </span>
-                  <span lang="ru" className={cn('font-medium', it.isCorrect ? 'text-success' : 'text-destructive')}>
-                    {it.selectedIndex == null ? t('result.noAnswer') : `${letter(it.selectedIndex)}. ${it.task.options[it.selectedIndex].ru}`}
+                  <span lang="ru" translate="no" className={cn('font-medium', it.isCorrect ? 'text-success' : 'text-destructive')}>
+                    {it.selectedIndex == null ? t('result.noAnswer') : `${letter(it.selectedIndex)}. ${it.task.options[it.selectedIndex]}`}
                   </span>
                 </p>
                 {!it.isCorrect && correctIdx != null && (
                   <p>
                     <span className="text-muted-foreground">{t('result.correctAnswer')}: </span>
-                    <span lang="ru" className="font-medium text-success">
-                      {letter(correctIdx)}. {it.task.options[correctIdx].ru}
+                    <span lang="ru" translate="no" className="font-medium text-success">
+                      {letter(correctIdx)}. {it.task.options[correctIdx]}
                     </span>
                   </p>
                 )}
-                {expl && <p className="text-muted-foreground">{expl}</p>}
+                {expl && <p lang="ru" translate="no" className="text-muted-foreground">{expl}</p>}
               </CardContent>
             </Card>
           )
