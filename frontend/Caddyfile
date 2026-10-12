@@ -1,0 +1,12 @@
+# DOMAIN=example.com -> automatic HTTPS; DOMAIN=:80 -> plain HTTP (IP only)
+{$DOMAIN::80} {
+	encode gzip
+	handle /api/* {
+		reverse_proxy api:8081
+	}
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+}
