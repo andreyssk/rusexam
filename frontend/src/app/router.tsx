@@ -15,9 +15,9 @@ import { ResultPage } from '@/pages/result'
 
 function Layout() {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-dvh">
       <Header />
-      <main className="mx-auto max-w-5xl px-4 py-6 pb-24 md:pb-6">
+      <main className="mx-auto max-w-5xl px-4 py-6 pb-[calc(6rem+env(safe-area-inset-bottom))] md:pb-6">
         <Outlet />
       </main>
     </div>

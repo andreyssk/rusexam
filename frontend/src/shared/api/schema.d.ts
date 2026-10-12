@@ -69,6 +69,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me/streak": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Consecutive days with at least one finished lesson (a completed attempt, in any mode). */
+        get: operations["getMyStreak"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/exams": {
         parameters: {
             query?: never;
@@ -542,6 +559,12 @@ export interface components {
             /** Format: double */
             scorePercent?: number | null;
         };
+        Streak: {
+            /** @description Days in a row up to today */
+            current: number;
+            longest: number;
+            doneToday: boolean;
+        };
         AnswerState: {
             /** Format: int64 */
             taskId: number;
@@ -680,6 +703,30 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Attempt"][];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getMyStreak: {
+        parameters: {
+            query?: {
+                /** @description IANA time zone of the learner (for example Europe/Moscow); a day is a calendar day in this zone. Defaults to UTC. */
+                tz?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Streak"];
                 };
             };
             default: components["responses"]["Error"];

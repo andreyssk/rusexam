@@ -27,3 +27,14 @@ export function useMyAttempts() {
     enabled: !!user,
   })
 }
+
+export function useStreak() {
+  const { user } = useAuth()
+  // "A day" is the learner's own calendar day, so the browser's time zone is sent along.
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
+  return useQuery({
+    queryKey: ['streak', user?.id],
+    queryFn: () => unwrap(api.GET('/me/streak', { params: { query: { tz } } })),
+    enabled: !!user && user.role !== 'admin',
+  })
+}

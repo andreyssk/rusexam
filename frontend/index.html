@@ -2,12 +2,28 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Russian Exam Prep</title>
+    <meta name="description" content="Practice for the Russian language exams: RVP, VNZh and citizenship." />
+    <meta name="theme-color" data-scheme="light" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" data-scheme="dark" content="#131f24" media="(prefers-color-scheme: dark)" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Rusexam" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="format-detection" content="telephone=no" />
     <script>
       try {
         var t = localStorage.getItem('rutest.theme')
-        if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t
+        if (t === 'light' || t === 'dark') {
+          document.documentElement.dataset.theme = t
+          document.querySelectorAll('meta[name=theme-color]').forEach(function (m) {
+            m.media = m.dataset.scheme === t ? 'all' : 'not all'
+          })
+        }
       } catch (e) {}
     </script>
   </head>

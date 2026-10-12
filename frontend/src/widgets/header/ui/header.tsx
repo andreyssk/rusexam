@@ -1,4 +1,4 @@
-import { BookOpen, GraduationCap, History, ListChecks, LogOut, Menu, User as UserIcon, Users, X, type LucideIcon } from 'lucide-react'
+import { BookOpen, Flame, GraduationCap, History, ListChecks, LogOut, Menu, User as UserIcon, Users, X, type LucideIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import { cn } from '@/shared/lib/cn'
@@ -7,6 +7,7 @@ import { Button } from '@/shared/ui/button'
 import { Tooltip } from '@/shared/ui/tooltip'
 import { LanguageSwitch } from '@/features/switch-language'
 import { ThemeSwitch } from '@/features/switch-theme'
+import { useStreak } from '@/entities/attempt'
 import { useAuth } from '@/entities/user'
 
 const link = (isActive: boolean) =>
@@ -41,6 +42,30 @@ function NavLinks() {
       {item.label}
     </NavLink>
   ))
+}
+
+/** Flame with the current day streak: lit once a lesson is finished today, dimmed while today is still open. */
+function StreakBadge() {
+  const { t } = useI18n()
+  const { data } = useStreak()
+  if (!data) return null
+  const label = data.doneToday
+    ? t('daystreak.done', { n: data.current })
+    : data.current > 0
+      ? t('daystreak.todo', { n: data.current })
+      : t('daystreak.start')
+  return (
+    <Tooltip label={label}>
+      <span
+        role="img"
+        aria-label={`${t('daystreak.label')}: ${data.current}. ${label}`}
+        className={cn('flex h-9 items-center gap-1 px-1 text-sm font-extrabold tabular-nums', data.doneToday ? 'text-orange-500' : 'text-muted-foreground')}
+      >
+        <Flame size={20} fill={data.doneToday ? 'currentColor' : 'none'} />
+        {data.current}
+      </span>
+    </Tooltip>
+  )
 }
 
 /** Mobile-only tab bar fixed to the bottom of the screen. */
@@ -86,11 +111,11 @@ export function Header() {
     return () => window.removeEventListener('keydown', onKey)
   }, [open])
 
-  const logo = (
+  // The top bar on mobile shows only the icon (the name stays for screen readers); the drawer has room for it.
+  const logo = (inDrawer: boolean) => (
     <Link to="/" className="flex items-center gap-2 text-lg font-extrabold text-primary">
       <GraduationCap size={26} />
-      <span className="hidden md:inline">{t('app.name')}</span>
-      <span className="md:hidden">Rusexam</span>
+      <span className={inDrawer ? undefined : 'sr-only md:not-sr-only'}>{inDrawer ? 'Rusexam' : t('app.name')}</span>
     </Link>
   )
 
@@ -100,11 +125,12 @@ export function Header() {
         <Button variant="ghost" size="icon" className="md:hidden" aria-label={t('nav.menu')} aria-expanded={open} onClick={() => setOpen(true)}>
           <Menu size={22} />
         </Button>
-        {logo}
+        {logo(false)}
         <nav className="hidden items-center gap-1 md:flex">
           <NavLinks />
         </nav>
         <div className="ml-auto flex items-center gap-2 sm:gap-3">
+          <StreakBadge />
           <ThemeSwitch />
           <LanguageSwitch />
           {user ? (
@@ -147,7 +173,7 @@ export function Header() {
           )}
         >
           <div className="flex items-center justify-between">
-            {logo}
+            {logo(true)}
             <Button variant="ghost" size="icon" aria-label={t('nav.closeMenu')} onClick={() => setOpen(false)}>
               <X size={22} />
             </Button>

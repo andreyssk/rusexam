@@ -1,2 +1,2 @@
-export { useAttempt, useResult, useMyAttempts } from './api/queries'
+export { useAttempt, useResult, useMyAttempts, useStreak } from './api/queries'
 export { useElapsedTimer, clearTimer } from './model/timer'

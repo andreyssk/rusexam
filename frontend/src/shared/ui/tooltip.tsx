@@ -7,7 +7,7 @@ export function Tooltip({ label, children }: { label: string; children: ReactNod
       {children}
       <span
         role="tooltip"
-        className="pointer-events-none absolute right-0 top-full z-50 mt-2 whitespace-nowrap rounded-lg bg-foreground px-2 py-1 text-xs font-bold text-background opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+        className="pointer-events-none absolute right-0 top-full z-50 mt-2 w-max max-w-56 rounded-lg bg-foreground px-2 py-1 text-xs font-bold text-background opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
       >
         {label}
       </span>

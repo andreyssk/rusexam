@@ -55,6 +55,7 @@ func New(pool *pgxpool.Pool, tokens *auth.Tokens, cookieSecure bool) http.Handle
 			r.Group(func(r chi.Router) {
 				r.Use(s.requireLearner)
 				r.Get("/me/attempts", s.myAttempts)
+				r.Get("/me/streak", s.myStreak)
 				r.Post("/exams/{examID}/attempts", s.startAttempt)
 				r.Get("/attempts/{attemptID}", s.getAttempt)
 				r.Put("/attempts/{attemptID}/answers/{taskID}", s.saveAnswer)

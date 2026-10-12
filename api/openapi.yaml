@@ -206,6 +206,14 @@ components:
         totalCount: { type: integer, nullable: true }
         scorePercent: { type: number, format: double, nullable: true }
 
+    Streak:
+      type: object
+      required: [current, longest, doneToday]
+      properties:
+        current: { type: integer, description: Days in a row up to today, or up to yesterday while today has no lesson yet. }
+        longest: { type: integer }
+        doneToday: { type: boolean }
+
     AnswerState:
       type: object
       required: [taskId, selectedIndex]
@@ -314,6 +322,25 @@ paths:
               schema:
                 type: array
                 items: { $ref: '#/components/schemas/Attempt' }
+        default: { $ref: '#/components/responses/Error' }
+
+  /me/streak:
+    get:
+      operationId: getMyStreak
+      description: Consecutive days with at least one finished lesson (a completed attempt, in any mode).
+      security: [{ bearer: [] }]
+      parameters:
+        - name: tz
+          in: query
+          required: false
+          description: IANA time zone of the learner (for example Europe/Moscow); a day is a calendar day in this zone. Defaults to UTC.
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Streak' }
         default: { $ref: '#/components/responses/Error' }
 
   /exams:
