@@ -1,37 +1,85 @@
 @import "tailwindcss";
+@import "@fontsource-variable/nunito";
+
+/* Duolingo-inspired look: bright green primary, blue for "selected", chunky buttons with a 3D bottom edge,
+   rounded cards with a thick bottom border. No data-theme attribute follows the system;
+   data-theme="light" | "dark" forces one. */
 
 :root {
-  --background: oklch(0.985 0.003 250);
-  --foreground: oklch(0.22 0.02 260);
-  --card: oklch(1 0 0);
-  --muted: oklch(0.955 0.006 250);
-  --muted-foreground: oklch(0.5 0.02 260);
-  --border: oklch(0.9 0.01 250);
-  --primary: oklch(0.45 0.17 262);
-  --primary-foreground: oklch(0.99 0 0);
-  --destructive: oklch(0.55 0.21 27);
-  --success: oklch(0.55 0.15 150);
-  --success-soft: oklch(0.95 0.05 150);
-  --danger-soft: oklch(0.95 0.04 27);
-  --primary-soft: oklch(0.94 0.03 262);
+  color-scheme: light;
+  --background: #ffffff;
+  --foreground: #3c3c3c;
+  --card: #ffffff;
+  --muted: #f7f7f7;
+  --muted-foreground: #777777;
+  --border: #e5e5e5;
+
+  --primary: #58cc02;
+  --primary-edge: #58a700;
+  --primary-foreground: #ffffff;
+
+  --accent: #1cb0f6;
+  --accent-edge: #1899d6;
+  --accent-soft: #ddf4ff;
+  --accent-foreground: #ffffff;
+
+  --destructive: #ff4b4b;
+  --destructive-edge: #ea2b2b;
+  --destructive-foreground: #ffffff;
+  --danger-soft: #ffdfe0;
+
+  --success: #4d9400;
+  --success-soft: #d7ffb8;
+
+  --font-sans: 'Nunito Variable', ui-rounded, 'Segoe UI', system-ui, -apple-system, sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: oklch(0.18 0.015 260);
-    --foreground: oklch(0.95 0.005 250);
-    --card: oklch(0.22 0.02 260);
-    --muted: oklch(0.27 0.02 260);
-    --muted-foreground: oklch(0.7 0.02 255);
-    --border: oklch(0.33 0.02 260);
-    --primary: oklch(0.72 0.14 262);
-    --primary-foreground: oklch(0.17 0.02 260);
-    --destructive: oklch(0.7 0.17 27);
-    --success: oklch(0.75 0.15 150);
-    --success-soft: oklch(0.28 0.06 150);
-    --danger-soft: oklch(0.28 0.06 27);
-    --primary-soft: oklch(0.28 0.05 262);
+  :root:not([data-theme]) {
+    color-scheme: dark;
+    --background: #131f24;
+    --foreground: #dce6ec;
+    --card: #1a2a31;
+    --muted: #202f36;
+    --muted-foreground: #9fb0b9;
+    --border: #37464f;
+    --primary: #58cc02;
+    --primary-edge: #46a302;
+    --primary-foreground: #0f1c13;
+    --accent: #49c0f8;
+    --accent-edge: #2b9bd6;
+    --accent-soft: #1c3441;
+    --accent-foreground: #0b1a22;
+    --destructive: #ff7878;
+    --destructive-edge: #d33131;
+    --destructive-foreground: #2b0a0a;
+    --danger-soft: #3b2124;
+    --success: #89e219;
+    --success-soft: #1f3a14;
   }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --background: #131f24;
+  --foreground: #dce6ec;
+  --card: #1a2a31;
+  --muted: #202f36;
+  --muted-foreground: #9fb0b9;
+  --border: #37464f;
+  --primary: #58cc02;
+  --primary-edge: #46a302;
+  --primary-foreground: #0f1c13;
+  --accent: #49c0f8;
+  --accent-edge: #2b9bd6;
+  --accent-soft: #1c3441;
+  --accent-foreground: #0b1a22;
+  --destructive: #ff7878;
+  --destructive-edge: #d33131;
+  --destructive-foreground: #2b0a0a;
+  --danger-soft: #3b2124;
+  --success: #89e219;
+  --success-soft: #1f3a14;
 }
 
 @theme inline {
@@ -42,15 +90,31 @@
   --color-muted-foreground: var(--muted-foreground);
   --color-border: var(--border);
   --color-primary: var(--primary);
+  --color-primary-edge: var(--primary-edge);
   --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-edge: var(--accent-edge);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
+  --color-destructive-edge: var(--destructive-edge);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-danger-soft: var(--danger-soft);
   --color-success: var(--success);
   --color-success-soft: var(--success-soft);
-  --color-danger-soft: var(--danger-soft);
-  --color-primary-soft: var(--primary-soft);
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
-html { color-scheme: light dark; }
-body { background: var(--background); color: var(--foreground); font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
-* { border-color: var(--border); }
+@layer base {
+  * { border-color: var(--border); }
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-weight: 600;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}

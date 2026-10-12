@@ -22,21 +22,21 @@ export function TaskView({ task, selectedIndex, correctIndex, disabled, showTran
   return (
     <div className="space-y-4">
       {task.passageRu && (
-        <figure className="rounded-lg border-l-4 border-primary bg-muted p-4">
+        <figure className="rounded-2xl border-2 border-b-4 bg-muted p-4">
           <figcaption className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
             {t('run.passage')}
           </figcaption>
           <p lang="ru" className="text-base leading-relaxed">{task.passageRu}</p>
           {showTranslation && task.passageEn && (
-            <p lang="en" className="mt-2 text-sm italic text-muted-foreground">{task.passageEn}</p>
+            <p lang="en" className="mt-2 text-sm font-semibold text-muted-foreground">{task.passageEn}</p>
           )}
         </figure>
       )}
 
       <div>
-        <h2 lang="ru" className="text-xl font-semibold leading-snug">{task.promptRu}</h2>
+        <h2 lang="ru" className="text-2xl font-extrabold leading-snug">{task.promptRu}</h2>
         {showTranslation && task.promptEn && (
-          <p lang="en" className="mt-1 text-sm italic text-muted-foreground">{task.promptEn}</p>
+          <p lang="en" className="mt-1 text-sm font-semibold text-muted-foreground">{task.promptEn}</p>
         )}
       </div>
 
@@ -54,27 +54,27 @@ export function TaskView({ task, selectedIndex, correctIndex, disabled, showTran
                 disabled={disabled}
                 onClick={() => onSelect?.(i)}
                 className={cn(
-                  'flex w-full items-center gap-3 rounded-lg border bg-card px-4 py-3 text-left transition-colors',
-                  !disabled && 'cursor-pointer hover:bg-muted',
-                  selected && !revealed && 'border-primary bg-primary-soft',
-                  isCorrect && 'border-success bg-success-soft',
-                  isWrong && 'border-destructive bg-danger-soft',
+                  'flex w-full items-center gap-3 rounded-2xl border-2 border-b-4 bg-card px-4 py-3 text-left font-bold transition-colors',
+                  !disabled && 'cursor-pointer hover:bg-muted active:border-b-2 active:translate-y-0.5',
+                  selected && !revealed && 'border-accent bg-accent-soft text-accent hover:bg-accent-soft',
+                  isCorrect && 'border-success bg-success-soft text-success',
+                  isWrong && 'border-destructive bg-danger-soft text-destructive',
                 )}
               >
                 <span
                   className={cn(
-                    'flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-xs font-semibold',
-                    selected && !revealed && 'border-primary bg-primary text-primary-foreground',
+                    'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border-2 text-sm font-extrabold',
+                    selected && !revealed && 'border-accent text-accent',
                     isCorrect && 'border-success bg-success text-primary-foreground',
-                    isWrong && 'border-destructive bg-destructive text-primary-foreground',
+                    isWrong && 'border-destructive bg-destructive text-destructive-foreground',
                   )}
                 >
                   {isCorrect ? <Check size={14} aria-label="correct" /> : isWrong ? <X size={14} aria-label="wrong" /> : LETTERS[i]}
                 </span>
                 <span>
-                  <span lang="ru" className="block">{opt.ru}</span>
+                  <span lang="ru" className="block text-lg">{opt.ru}</span>
                   {showTranslation && opt.en && (
-                    <span lang="en" className="block text-sm italic text-muted-foreground">{opt.en}</span>
+                    <span lang="en" className="block text-sm font-semibold text-muted-foreground">{opt.en}</span>
                   )}
                 </span>
               </button>

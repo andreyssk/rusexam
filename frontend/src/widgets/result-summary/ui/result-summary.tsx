@@ -24,24 +24,24 @@ export function ResultSummary({ attemptId }: { attemptId: number }) {
     <div className="space-y-6">
       <div>
         <p className="text-sm text-muted-foreground">{t('result.title')}</p>
-        <h1 className="text-xl font-semibold">{pick(attempt.examTitleRu, attempt.examTitleEn)}</h1>
+        <h1 className="text-xl font-extrabold">{pick(attempt.examTitleRu, attempt.examTitleEn)}</h1>
       </div>
 
       <Card>
         <CardContent className="grid gap-6 pt-5 sm:grid-cols-[auto_1fr]">
           <div className="text-center sm:text-left">
             <p className="text-sm text-muted-foreground">{t('result.score')}</p>
-            <p className="text-5xl font-bold tabular-nums text-primary">{formatPercent(attempt.scorePercent)}</p>
+            <p className="text-5xl font-extrabold tabular-nums text-primary">{formatPercent(attempt.scorePercent)}</p>
             <p className="mt-1 text-sm">{t('result.correct', { c: attempt.correctCount ?? 0, t: attempt.totalCount ?? 0 })}</p>
           </div>
           <dl className="grid grid-cols-2 gap-4 text-sm sm:max-w-sm">
             <div>
               <dt className="text-muted-foreground">{t('result.time')}</dt>
-              <dd className="text-lg font-semibold tabular-nums">{formatDuration(attempt.durationSeconds ?? 0)}</dd>
+              <dd className="text-lg font-extrabold tabular-nums">{formatDuration(attempt.durationSeconds ?? 0)}</dd>
             </div>
             <div>
               <dt className="text-muted-foreground">{t('result.mode')}</dt>
-              <dd className="text-lg font-semibold">{t(`mode.${attempt.mode}`)}</dd>
+              <dd className="text-lg font-extrabold">{t(`mode.${attempt.mode}`)}</dd>
             </div>
           </dl>
         </CardContent>
@@ -70,7 +70,7 @@ export function ResultSummary({ attemptId }: { attemptId: number }) {
       </Card>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold">{t('result.review')}</h2>
+        <h2 className="text-lg font-extrabold">{t('result.review')}</h2>
         {items.map((it, n) => {
           const correctIdx = it.task.correctIndex
           const expl = pick(it.task.explanationRu, it.task.explanationEn)

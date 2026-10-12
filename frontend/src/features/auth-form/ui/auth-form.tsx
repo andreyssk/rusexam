@@ -126,7 +126,7 @@ export function AuthForm() {
             {registering ? t('auth.haveAccount') : t('auth.noAccount')}{' '}
             <button
               type="button"
-              className="cursor-pointer font-medium text-primary underline-offset-2 hover:underline"
+              className="cursor-pointer font-extrabold text-accent underline-offset-2 hover:underline"
               onClick={() => {
                 setRegistering((r) => !r)
                 setFieldErrors({})

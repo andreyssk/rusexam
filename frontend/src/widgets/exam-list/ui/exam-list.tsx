@@ -1,6 +1,6 @@
 import { useI18n } from '@/shared/lib/i18n'
 import { ErrorMessage, Loading } from '@/shared/ui/states'
-import { ExamCard, useExams } from '@/entities/exam'
+import { ExamRow, useExams } from '@/entities/exam'
 import { StartAttempt } from '@/features/start-attempt'
 
 export function ExamList() {
@@ -12,10 +12,10 @@ export function ExamList() {
   if (data.length === 0) return <p className="py-10 text-center text-muted-foreground">{t('home.empty')}</p>
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
+    <ul className="space-y-3">
       {data.map((exam) => (
-        <ExamCard key={exam.id} exam={exam} actions={<StartAttempt examId={exam.id} disabled={exam.tasksCount === 0} />} />
+        <ExamRow key={exam.id} exam={exam} actions={<StartAttempt compact examId={exam.id} disabled={exam.tasksCount === 0} />} />
       ))}
-    </div>
+    </ul>
   )
 }

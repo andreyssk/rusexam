@@ -6,19 +6,16 @@ export type Lang = 'en' | 'ru'
 const en = {
   'app.name': 'Russian Exam Prep',
   'nav.exams': 'Exams',
-  'nav.history': 'My attempts',
+  'nav.history': 'History',
   'nav.admin': 'Admin',
   'nav.login': 'Log in',
   'nav.logout': 'Log out',
 
   'home.title': 'Practice exams',
-  'home.subtitle': 'Russian language, history and law — for RVP, residence permit and citizenship.',
   'home.empty': 'No exams yet.',
   'exam.tasks': '{n} tasks',
-  'exam.avg': 'Average result',
-  'exam.avgNone': 'No attempts yet',
-  'exam.attempts': 'Attempts: {n}',
-  'exam.mine': 'Your best / last',
+  'exam.last': 'Last result',
+  'exam.myAttempts': 'Your attempts: {n}',
   'exam.training': 'Training',
   'exam.exam': 'Exam',
   'exam.trainingHint': 'Instant feedback and explanations after each question',
@@ -79,7 +76,7 @@ const en = {
   'result.tryAgain': 'Try again',
   'result.backHome': 'Back to exams',
 
-  'history.title': 'My attempts',
+  'history.title': 'History',
   'history.empty': 'You have not started any exams yet.',
   'history.continue': 'Continue',
   'history.view': 'Results',
@@ -123,6 +120,10 @@ const en = {
   'common.error': 'Something went wrong.',
   'common.notFound': 'Page not found',
   'common.language': 'Language',
+  'theme.label': 'Theme',
+  'theme.auto': 'Auto',
+  'theme.light': 'Light',
+  'theme.dark': 'Dark',
 } as const
 
 export type TKey = keyof typeof en
@@ -130,19 +131,16 @@ export type TKey = keyof typeof en
 const ru: Record<TKey, string> = {
   'app.name': 'Подготовка к экзамену',
   'nav.exams': 'Экзамены',
-  'nav.history': 'Мои попытки',
+  'nav.history': 'История попыток',
   'nav.admin': 'Админка',
   'nav.login': 'Войти',
   'nav.logout': 'Выйти',
 
   'home.title': 'Пробные экзамены',
-  'home.subtitle': 'Русский язык, история и законодательство — для РВП, ВНЖ и гражданства.',
   'home.empty': 'Экзаменов пока нет.',
   'exam.tasks': 'Заданий: {n}',
-  'exam.avg': 'Средний результат',
-  'exam.avgNone': 'Попыток пока нет',
-  'exam.attempts': 'Попыток: {n}',
-  'exam.mine': 'Ваш лучший / последний',
+  'exam.last': 'Последний результат',
+  'exam.myAttempts': 'Ваших попыток: {n}',
   'exam.training': 'Тренировка',
   'exam.exam': 'Экзамен',
   'exam.trainingHint': 'Правильный ответ и объяснение после каждого вопроса',
@@ -203,7 +201,7 @@ const ru: Record<TKey, string> = {
   'result.tryAgain': 'Пройти ещё раз',
   'result.backHome': 'К списку экзаменов',
 
-  'history.title': 'Мои попытки',
+  'history.title': 'История попыток',
   'history.empty': 'Вы ещё не начинали ни одного экзамена.',
   'history.continue': 'Продолжить',
   'history.view': 'Результаты',
@@ -247,6 +245,10 @@ const ru: Record<TKey, string> = {
   'common.error': 'Что-то пошло не так.',
   'common.notFound': 'Страница не найдена',
   'common.language': 'Язык',
+  'theme.label': 'Тема',
+  'theme.auto': 'Авто',
+  'theme.light': 'Светлая',
+  'theme.dark': 'Тёмная',
 }
 
 const dictionaries = { en, ru } as const

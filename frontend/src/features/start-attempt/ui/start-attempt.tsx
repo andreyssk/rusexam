@@ -7,7 +7,7 @@ import { Button } from '@/shared/ui/button'
 import { ErrorMessage } from '@/shared/ui/states'
 import { useAuth } from '@/entities/user'
 
-export function StartAttempt({ examId, disabled }: { examId: number; disabled?: boolean }) {
+export function StartAttempt({ examId, disabled, compact }: { examId: number; disabled?: boolean; compact?: boolean }) {
   const { t } = useI18n()
   const { user } = useAuth()
   const navigate = useNavigate()
@@ -25,7 +25,7 @@ export function StartAttempt({ examId, disabled }: { examId: number; disabled?: 
 
   if (!user) {
     return (
-      <Button variant="outline" className="w-full" onClick={() => navigate('/login', { state: { from: location.pathname } })}>
+      <Button variant="outline" size={compact ? 'sm' : 'default'} className={compact ? '' : 'w-full'} onClick={() => navigate('/login', { state: { from: location.pathname } })}>
         {t('exam.loginToStart')}
       </Button>
     )
@@ -33,16 +33,17 @@ export function StartAttempt({ examId, disabled }: { examId: number; disabled?: 
 
   return (
     <div className="space-y-2">
-      <div className="grid grid-cols-2 gap-2">
+      <div className={compact ? 'flex gap-2' : 'grid grid-cols-2 gap-2'}>
         <Button
           variant="outline"
+          size={compact ? 'sm' : 'default'}
           disabled={disabled || start.isPending}
           onClick={() => start.mutate('training')}
           title={t('exam.trainingHint')}
         >
           <BookOpen size={16} /> {t('exam.training')}
         </Button>
-        <Button disabled={disabled || start.isPending} onClick={() => start.mutate('exam')} title={t('exam.examHint')}>
+        <Button size={compact ? 'sm' : 'default'} disabled={disabled || start.isPending} onClick={() => start.mutate('exam')} title={t('exam.examHint')}>
           <Timer size={16} /> {t('exam.exam')}
         </Button>
       </div>

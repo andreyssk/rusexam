@@ -32,6 +32,7 @@ The admin account comes from `ADMIN_USERNAME` / `ADMIN_PASSWORD` and is re-synce
 - The timer has no limit; it counts while the tab is visible, survives reloads, and the time is saved on finish.
 - Exam cards show the average result across all completed attempts, plus your best and last score when logged in.
 - UI language EN/RU; task text is Russian with optional English translations.
+- Duolingo-style look with Auto / Light / Dark themes, chosen in the header.
 - Sections: vocabulary, grammar, reading, history, law. Speaking and listening are not implemented.
 
 ## Layout

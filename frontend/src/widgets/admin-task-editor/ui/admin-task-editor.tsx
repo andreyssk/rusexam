@@ -75,7 +75,7 @@ export function AdminTaskEditor({ examId }: { examId: number }) {
 
       <section className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">{t('admin.tasks')}</h2>
+          <h2 className="text-lg font-extrabold">{t('admin.tasks')}</h2>
           {!editing && (
             <Button onClick={() => setEditing({ kind: 'new' })}>
               <Plus size={16} /> {t('admin.addTask')}

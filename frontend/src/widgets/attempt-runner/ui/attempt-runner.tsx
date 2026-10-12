@@ -59,8 +59,8 @@ export function AttemptRunner({ attemptId }: { attemptId: number }) {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-lg font-semibold">{pick(attempt.examTitleRu, attempt.examTitleEn)}</h1>
-        <Badge className={cn(isTraining ? 'bg-primary-soft text-primary' : 'bg-danger-soft text-destructive')}>
+        <h1 className="text-lg font-extrabold">{pick(attempt.examTitleRu, attempt.examTitleEn)}</h1>
+        <Badge className={cn(isTraining ? 'bg-accent-soft text-accent' : 'bg-danger-soft text-destructive')}>
           {t(`mode.${attempt.mode}`)}
         </Badge>
         <div className="ml-auto flex items-center gap-1.5 tabular-nums text-muted-foreground" aria-label={t('run.timer')}>
@@ -84,11 +84,11 @@ export function AttemptRunner({ attemptId }: { attemptId: number }) {
               onClick={() => setIndex(i)}
               aria-current={i === index ? 'step' : undefined}
               className={cn(
-                'h-8 w-8 cursor-pointer rounded-md border text-xs font-medium',
-                a && 'bg-primary-soft text-primary',
+                'h-9 w-9 cursor-pointer rounded-xl border-2 border-b-4 bg-card text-sm font-extrabold text-muted-foreground',
+                a && 'border-accent bg-accent-soft text-accent',
                 a?.isCorrect === true && 'border-success bg-success-soft text-success',
                 a?.isCorrect === false && 'border-destructive bg-danger-soft text-destructive',
-                i === index && 'outline-2 outline-offset-1 outline-primary',
+                i === index && 'outline-2 outline-offset-2 outline-accent',
               )}
             >
               {i + 1}
@@ -104,7 +104,8 @@ export function AttemptRunner({ attemptId }: { attemptId: number }) {
               {t('run.question', { i: index + 1, n: total })} · {t(`section.${task.section}`)}
             </p>
             <Button
-              variant={showTranslation ? 'default' : 'outline'}
+              variant="outline"
+              className={showTranslation ? 'bg-accent-soft' : undefined}
               size="sm"
               aria-pressed={showTranslation}
               onClick={() => setTranslateOverride(!showTranslation)}
@@ -128,9 +129,9 @@ export function AttemptRunner({ attemptId }: { attemptId: number }) {
           {feedbackShown && (
             <div
               role="status"
-              className={cn('rounded-lg p-4', answer?.isCorrect ? 'bg-success-soft' : 'bg-danger-soft')}
+              className={cn('rounded-2xl p-4', answer?.isCorrect ? 'bg-success-soft' : 'bg-danger-soft')}
             >
-              <p className={cn('font-semibold', answer?.isCorrect ? 'text-success' : 'text-destructive')}>
+              <p className={cn('text-lg font-extrabold', answer?.isCorrect ? 'text-success' : 'text-destructive')}>
                 {answer?.isCorrect ? t('run.correct') : t('run.wrong')}
               </p>
               {explanation && (

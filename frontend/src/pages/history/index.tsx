@@ -26,7 +26,7 @@ export function HistoryPage() {
               <Card>
                 <CardContent className="flex flex-wrap items-center gap-3 py-4">
                   <div className="min-w-0 flex-1">
-                    <p className="font-medium">{pick(a.examTitleRu, a.examTitleEn)}</p>
+                    <p className="font-bold">{pick(a.examTitleRu, a.examTitleEn)}</p>
                     <p className="text-sm text-muted-foreground">
                       {formatDate(a.startedAt, lang)}
                       {done && a.durationSeconds != null && ` · ${formatDuration(a.durationSeconds)}`}
@@ -34,9 +34,9 @@ export function HistoryPage() {
                   </div>
                   <Badge>{t(`mode.${a.mode}`)}</Badge>
                   {done ? (
-                    <span className="w-14 text-right text-lg font-semibold tabular-nums">{formatPercent(a.scorePercent)}</span>
+                    <span className="w-14 text-right text-lg font-extrabold tabular-nums">{formatPercent(a.scorePercent)}</span>
                   ) : (
-                    <Badge className="bg-primary-soft text-primary">{t('history.inProgress')}</Badge>
+                    <Badge className="bg-accent-soft text-accent">{t('history.inProgress')}</Badge>
                   )}
                   <Button variant="outline" size="sm" asChild>
                     <Link to={done ? `/attempts/${a.id}/result` : `/attempts/${a.id}`}>

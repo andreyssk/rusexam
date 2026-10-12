@@ -22,7 +22,7 @@ export function AdminExamList() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">{t('admin.exams')}</h1>
+        <h1 className="text-xl font-extrabold">{t('admin.exams')}</h1>
         {!creating && (
           <Button onClick={() => setCreating(true)}>
             <Plus size={16} /> {t('admin.newExam')}

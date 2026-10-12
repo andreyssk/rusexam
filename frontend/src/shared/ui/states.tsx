@@ -16,7 +16,7 @@ export function ErrorMessage({ error, message }: { error?: unknown; message?: st
         ? error.message
         : t('common.error'))
   return (
-    <p role="alert" className="rounded-md bg-danger-soft px-3 py-2 text-sm text-destructive">
+    <p role="alert" className="rounded-2xl bg-danger-soft px-4 py-2.5 text-sm font-bold text-destructive">
       {msg}
     </p>
   )
