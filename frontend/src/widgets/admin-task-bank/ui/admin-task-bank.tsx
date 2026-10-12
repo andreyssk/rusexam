@@ -18,11 +18,12 @@ function TaskBank({ courseId }: { courseId: number }) {
   const { t, pick } = useI18n()
   const confirm = useConfirm()
   const [section, setSection] = useState<Section | ''>('')
+  const [unassigned, setUnassigned] = useState(false)
   const [search, setSearch] = useState('')
   const q = useDeferredValue(search.trim())
   const [editing, setEditing] = useState<Editing>(null)
   const [importing, setImporting] = useState(false)
-  const { data, isPending, error } = useBankTasks({ courseId, section, q })
+  const { data, isPending, error } = useBankTasks({ courseId, section, q, unassigned })
   const create = useCreateTask()
   const update = useUpdateTask()
   const del = useDeleteTask()
@@ -99,6 +100,10 @@ function TaskBank({ courseId }: { courseId: number }) {
             </option>
           ))}
         </Select>
+        <label className="flex h-11 cursor-pointer items-center gap-2 rounded-2xl border-2 bg-muted px-4 text-sm font-bold">
+          <input type="checkbox" className="size-4 accent-[var(--primary)]" checked={unassigned} onChange={(e) => setUnassigned(e.target.checked)} />
+          {t('admin.onlyUnassigned')}
+        </label>
       </div>
 
       {selected.size > 0 && (

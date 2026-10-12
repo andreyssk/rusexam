@@ -130,7 +130,10 @@ export function Header() {
           {/* Not while a session runs: the course is fixed for it. */}
           {!isAttemptRunPath(location.pathname) && <CourseSwitch />}
           <ThemeSwitch />
-          <LanguageSwitch />
+          {/* On phones the language lives in the menu drawer. */}
+          <span className="max-md:hidden">
+            <LanguageSwitch />
+          </span>
           {user ? (
             <>
               <span
@@ -176,18 +179,24 @@ export function Header() {
               <X size={22} />
             </Button>
           </div>
-          {user && (
-            <div className="mt-auto flex flex-col gap-3 border-t-2 pt-4">
-              <div className="flex items-center gap-1.5 text-sm font-bold">
-                <UserIcon size={16} className="shrink-0 text-muted-foreground" />
-                <span className="truncate">{user.username}</span>
-              </div>
-              <Button variant="outline" size="sm" onClick={() => void logout()}>
-                <LogOut size={16} />
-                {t('nav.logout')}
-              </Button>
+          <div className="mt-auto flex flex-col gap-3 border-t-2 pt-4">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-sm font-bold">{t('common.language')}</span>
+              <LanguageSwitch />
             </div>
-          )}
+            {user && (
+              <>
+                <div className="flex items-center gap-1.5 text-sm font-bold">
+                  <UserIcon size={16} className="shrink-0 text-muted-foreground" />
+                  <span className="truncate">{user.username}</span>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => void logout()}>
+                  <LogOut size={16} />
+                  {t('nav.logout')}
+                </Button>
+              </>
+            )}
+          </div>
         </aside>
       </div>
       <BottomNav />

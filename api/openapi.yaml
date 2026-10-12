@@ -746,6 +746,10 @@ paths:
         - name: section
           in: query
           schema: { $ref: '#/components/schemas/Section' }
+        - name: unassigned
+          in: query
+          description: When true, only tasks that are not in any exam.
+          schema: { type: boolean }
         - name: q
           in: query
           description: Case-insensitive search in the question text.

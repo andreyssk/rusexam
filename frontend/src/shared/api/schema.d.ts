@@ -1386,6 +1386,8 @@ export interface operations {
                 /** @description Only the tasks of this course. */
                 courseId?: number;
                 section?: components["schemas"]["Section"];
+                /** @description When true, only tasks that are not in any exam. */
+                unassigned?: boolean;
                 /** @description Case-insensitive search in the question text. */
                 q?: string;
             };

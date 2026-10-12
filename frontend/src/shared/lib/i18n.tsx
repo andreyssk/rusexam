@@ -173,6 +173,7 @@ const en = {
   'common.confirm': 'Confirm',
   'common.search': 'Search…',
   'common.allSections': 'All sections',
+  'admin.onlyUnassigned': 'Not in any exam',
   'run.confirmAnswer': 'Confirm answer',
   'run.checkAnswer': 'Check answer',
 
@@ -433,6 +434,7 @@ const ru: Record<TKey, string> = {
   'common.confirm': 'Подтвердить',
   'common.search': 'Поиск…',
   'common.allSections': 'Все разделы',
+  'admin.onlyUnassigned': 'Не в экзаменах',
   'run.confirmAnswer': 'Подтвердить ответ',
   'run.checkAnswer': 'Проверить ответ',
 

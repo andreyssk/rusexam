@@ -147,7 +147,7 @@ func (s *Server) adminListBankTasks(w http.ResponseWriter, r *http.Request) {
 		}
 		courseID = &id
 	}
-	tasks, err := adminBankTasks(r.Context(), s.pool, courseID, section, strings.TrimSpace(r.URL.Query().Get("q")))
+	tasks, err := adminBankTasks(r.Context(), s.pool, courseID, section, strings.TrimSpace(r.URL.Query().Get("q")), r.URL.Query().Get("unassigned") == "true")
 	if err != nil {
 		fail(w, err)
 		return

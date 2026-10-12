@@ -7,13 +7,13 @@ import { useToast } from '@/shared/ui/toast'
 // ---- reads ----
 
 /** The task bank of one course, optionally filtered. */
-export function useBankTasks(filters: { courseId: number; section: Section | ''; q: string }) {
+export function useBankTasks(filters: { courseId: number; section: Section | ''; q: string; unassigned?: boolean }) {
   return useQuery({
-    queryKey: ['admin-bank', filters.courseId, filters.section, filters.q],
+    queryKey: ['admin-bank', filters.courseId, filters.section, filters.q, filters.unassigned],
     queryFn: () =>
       unwrap(
         api.GET('/admin/tasks', {
-          params: { query: { courseId: filters.courseId, section: filters.section || undefined, q: filters.q || undefined } },
+          params: { query: { courseId: filters.courseId, section: filters.section || undefined, q: filters.q || undefined, unassigned: filters.unassigned || undefined } },
         }),
       ),
     placeholderData: (prev) => prev,

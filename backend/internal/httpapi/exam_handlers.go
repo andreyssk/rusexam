@@ -152,14 +152,15 @@ func scanAdminTasks(rows pgx.Rows) ([]AdminTask, error) {
 	return out, rows.Err()
 }
 
-// adminBankTasks lists the task bank, optionally filtered by course, section and a text search.
-func adminBankTasks(ctx context.Context, q querier, courseID *int64, section, search string) ([]AdminTask, error) {
+// adminBankTasks lists the task bank, optionally filtered by course, section, a text search and "not in any exam".
+func adminBankTasks(ctx context.Context, q querier, courseID *int64, section, search string, unassigned bool) ([]AdminTask, error) {
 	rows, err := q.Query(ctx, `SELECT `+taskColumns+`, t.course_id, `+usedInColumn+`
 		FROM tasks t
 		WHERE ($3::bigint IS NULL OR t.course_id = $3)
 		  AND ($1 = '' OR t.section = $1)
 		  AND ($2 = '' OR t.prompt ILIKE '%' || $2 || '%')
-		ORDER BY t.id DESC`, section, search, courseID)
+		  AND (NOT $4 OR NOT EXISTS (SELECT 1 FROM exam_tasks et WHERE et.task_id = t.id))
+		ORDER BY t.id DESC`, section, search, courseID, unassigned)
 	if err != nil {
 		return nil, err
 	}
