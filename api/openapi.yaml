@@ -1,0 +1,515 @@
+openapi: 3.0.3
+info:
+  title: Russian exam prep API
+  version: 0.1.0
+  description: Practice exams for the Russian language, history and law test (RVP, residence permit, citizenship).
+servers:
+  - url: /api
+
+components:
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  responses:
+    Error:
+      description: Error
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+  parameters:
+    ExamID:
+      name: examID
+      in: path
+      required: true
+      schema: { type: integer, format: int64 }
+    AttemptID:
+      name: attemptID
+      in: path
+      required: true
+      schema: { type: integer, format: int64 }
+    TaskID:
+      name: taskID
+      in: path
+      required: true
+      schema: { type: integer, format: int64 }
+
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
+
+    Section:
+      type: string
+      enum: [vocabulary, grammar, reading, history, law]
+
+    Mode:
+      type: string
+      enum: [training, exam]
+
+    Credentials:
+      type: object
+      required: [username, password]
+      properties:
+        username: { type: string }
+        password: { type: string }
+
+    User:
+      type: object
+      required: [id, username, role]
+      properties:
+        id: { type: integer, format: int64 }
+        username: { type: string }
+        role: { type: string, enum: [user, admin] }
+
+    AuthResponse:
+      type: object
+      required: [token, user]
+      properties:
+        token: { type: string }
+        user: { $ref: '#/components/schemas/User' }
+
+    Option:
+      type: object
+      required: [ru]
+      properties:
+        ru: { type: string }
+        en: { type: string }
+
+    Task:
+      description: >
+        Answer fields (correctIndex, explanations) are only present when the caller is allowed to see them:
+        admin views, training-mode feedback, and finished attempts.
+      type: object
+      required: [id, examId, position, section, promptRu, options]
+      properties:
+        id: { type: integer, format: int64 }
+        examId: { type: integer, format: int64 }
+        position: { type: integer }
+        section: { $ref: '#/components/schemas/Section' }
+        promptRu: { type: string }
+        promptEn: { type: string }
+        passageRu: { type: string }
+        passageEn: { type: string }
+        options:
+          type: array
+          items: { $ref: '#/components/schemas/Option' }
+        correctIndex: { type: integer }
+        explanationRu: { type: string }
+        explanationEn: { type: string }
+
+    TaskInput:
+      type: object
+      required: [section, options, correctIndex]
+      properties:
+        section: { $ref: '#/components/schemas/Section' }
+        position: { type: integer, nullable: true }
+        promptRu: { type: string }
+        promptEn: { type: string }
+        passageRu: { type: string }
+        passageEn: { type: string }
+        options:
+          type: array
+          minItems: 2
+          maxItems: 8
+          items: { $ref: '#/components/schemas/Option' }
+        correctIndex: { type: integer, minimum: 0 }
+        explanationRu: { type: string }
+        explanationEn: { type: string }
+
+    ExamInput:
+      type: object
+      properties:
+        titleRu: { type: string }
+        titleEn: { type: string }
+        descriptionRu: { type: string }
+        descriptionEn: { type: string }
+
+    ExamStats:
+      type: object
+      required: [attemptsCount, avgScore]
+      properties:
+        attemptsCount: { type: integer }
+        avgScore: { type: number, format: double, nullable: true, description: Average score percent over all completed attempts. }
+
+    MyExamStats:
+      type: object
+      required: [attemptsCount, bestScore, lastScore]
+      properties:
+        attemptsCount: { type: integer }
+        bestScore: { type: number, format: double, nullable: true }
+        lastScore: { type: number, format: double, nullable: true }
+
+    Exam:
+      type: object
+      required: [id, titleRu, titleEn, descriptionRu, descriptionEn, tasksCount, sections, stats]
+      properties:
+        id: { type: integer, format: int64 }
+        titleRu: { type: string }
+        titleEn: { type: string }
+        descriptionRu: { type: string }
+        descriptionEn: { type: string }
+        tasksCount: { type: integer }
+        sections:
+          type: object
+          additionalProperties: { type: integer }
+        stats: { $ref: '#/components/schemas/ExamStats' }
+        myStats: { $ref: '#/components/schemas/MyExamStats' }
+
+    Attempt:
+      type: object
+      required: [id, examId, examTitleRu, examTitleEn, mode, status, startedAt]
+      properties:
+        id: { type: integer, format: int64 }
+        examId: { type: integer, format: int64 }
+        examTitleRu: { type: string }
+        examTitleEn: { type: string }
+        mode: { $ref: '#/components/schemas/Mode' }
+        status: { type: string, enum: [in_progress, completed] }
+        startedAt: { type: string, format: date-time }
+        finishedAt: { type: string, format: date-time, nullable: true }
+        durationSeconds: { type: integer, nullable: true }
+        correctCount: { type: integer, nullable: true }
+        totalCount: { type: integer, nullable: true }
+        scorePercent: { type: number, format: double, nullable: true }
+
+    AnswerState:
+      type: object
+      required: [taskId, selectedIndex]
+      properties:
+        taskId: { type: integer, format: int64 }
+        selectedIndex: { type: integer }
+        isCorrect: { type: boolean }
+        correctIndex: { type: integer }
+        explanationRu: { type: string }
+        explanationEn: { type: string }
+
+    AttemptState:
+      type: object
+      required: [attempt, tasks, answers]
+      properties:
+        attempt: { $ref: '#/components/schemas/Attempt' }
+        tasks:
+          type: array
+          items: { $ref: '#/components/schemas/Task' }
+        answers:
+          type: array
+          items: { $ref: '#/components/schemas/AnswerState' }
+
+    ResultItem:
+      type: object
+      required: [task, selectedIndex, isCorrect]
+      properties:
+        task: { $ref: '#/components/schemas/Task' }
+        selectedIndex: { type: integer, nullable: true }
+        isCorrect: { type: boolean }
+
+    SectionScore:
+      type: object
+      required: [section, correct, total]
+      properties:
+        section: { $ref: '#/components/schemas/Section' }
+        correct: { type: integer }
+        total: { type: integer }
+
+    Result:
+      type: object
+      required: [attempt, items, sections]
+      properties:
+        attempt: { $ref: '#/components/schemas/Attempt' }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/ResultItem' }
+        sections:
+          type: array
+          items: { $ref: '#/components/schemas/SectionScore' }
+
+paths:
+  /auth/register:
+    post:
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Credentials' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResponse' }
+        default: { $ref: '#/components/responses/Error' }
+
+  /auth/login:
+    post:
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Credentials' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResponse' }
+        default: { $ref: '#/components/responses/Error' }
+
+  /me:
+    get:
+      operationId: getMe
+      security: [{ bearer: [] }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+        default: { $ref: '#/components/responses/Error' }
+
+  /me/attempts:
+    get:
+      operationId: listMyAttempts
+      security: [{ bearer: [] }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Attempt' }
+        default: { $ref: '#/components/responses/Error' }
+
+  /exams:
+    get:
+      operationId: listExams
+      description: Public. When a bearer token is sent, each exam also carries the caller's personal stats.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Exam' }
+        default: { $ref: '#/components/responses/Error' }
+
+  /exams/{examID}:
+    parameters:
+      - $ref: '#/components/parameters/ExamID'
+    get:
+      operationId: getExam
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Exam' }
+        default: { $ref: '#/components/responses/Error' }
+
+  /exams/{examID}/attempts:
+    parameters:
+      - $ref: '#/components/parameters/ExamID'
+    post:
+      operationId: startAttempt
+      security: [{ bearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mode]
+              properties:
+                mode: { $ref: '#/components/schemas/Mode' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Attempt' }
+        default: { $ref: '#/components/responses/Error' }
+
+  /attempts/{attemptID}:
+    parameters:
+      - $ref: '#/components/parameters/AttemptID'
+    get:
+      operationId: getAttempt
+      security: [{ bearer: [] }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AttemptState' }
+        default: { $ref: '#/components/responses/Error' }
+
+  /attempts/{attemptID}/answers/{taskID}:
+    parameters:
+      - $ref: '#/components/parameters/AttemptID'
+      - $ref: '#/components/parameters/TaskID'
+    put:
+      operationId: saveAnswer
+      description: >
+        In exam mode the answer can be changed until the attempt is finished. In training mode the answer is final
+        and the response carries the correct answer and explanation.
+      security: [{ bearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [selectedIndex]
+              properties:
+                selectedIndex: { type: integer, minimum: 0 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AnswerState' }
+        default: { $ref: '#/components/responses/Error' }
+
+  /attempts/{attemptID}/finish:
+    parameters:
+      - $ref: '#/components/parameters/AttemptID'
+    post:
+      operationId: finishAttempt
+      security: [{ bearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [durationSeconds]
+              properties:
+                durationSeconds: { type: integer, minimum: 0 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Result' }
+        default: { $ref: '#/components/responses/Error' }
+
+  /attempts/{attemptID}/result:
+    parameters:
+      - $ref: '#/components/parameters/AttemptID'
+    get:
+      operationId: getResult
+      security: [{ bearer: [] }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Result' }
+        default: { $ref: '#/components/responses/Error' }
+
+  /admin/exams:
+    post:
+      operationId: adminCreateExam
+      security: [{ bearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ExamInput' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Exam' }
+        default: { $ref: '#/components/responses/Error' }
+
+  /admin/exams/{examID}:
+    parameters:
+      - $ref: '#/components/parameters/ExamID'
+    put:
+      operationId: adminUpdateExam
+      security: [{ bearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ExamInput' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Exam' }
+        default: { $ref: '#/components/responses/Error' }
+    delete:
+      operationId: adminDeleteExam
+      security: [{ bearer: [] }]
+      responses:
+        '204': { description: Deleted }
+        default: { $ref: '#/components/responses/Error' }
+
+  /admin/exams/{examID}/tasks:
+    parameters:
+      - $ref: '#/components/parameters/ExamID'
+    get:
+      operationId: adminListTasks
+      security: [{ bearer: [] }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Task' }
+        default: { $ref: '#/components/responses/Error' }
+    post:
+      operationId: adminCreateTask
+      security: [{ bearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TaskInput' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Task' }
+        default: { $ref: '#/components/responses/Error' }
+
+  /admin/tasks/{taskID}:
+    parameters:
+      - $ref: '#/components/parameters/TaskID'
+    put:
+      operationId: adminUpdateTask
+      security: [{ bearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TaskInput' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Task' }
+        default: { $ref: '#/components/responses/Error' }
+    delete:
+      operationId: adminDeleteTask
+      security: [{ bearer: [] }]
+      responses:
+        '204': { description: Deleted }
+        default: { $ref: '#/components/responses/Error' }

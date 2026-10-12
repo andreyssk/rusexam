@@ -1,0 +1,404 @@
+[
+  {
+    "titleRu": "Пробный экзамен №1: русский язык, история, законодательство",
+    "titleEn": "Sample exam 1: Russian language, history and law",
+    "descriptionRu": "Учебный вариант для подготовки к комплексному экзамену (РВП, ВНЖ, гражданство). Составлен для практики, не является официальным вариантом.",
+    "descriptionEn": "A practice set for the comprehensive exam (RVP, residence permit, citizenship). Written for practice; it is not an official variant.",
+    "tasks": [
+      {
+        "section": "vocabulary",
+        "promptRu": "Выберите слово, противоположное по значению слову «большой».",
+        "promptEn": "Choose the word opposite in meaning to «большой» (big).",
+        "options": [
+          {"ru": "маленький", "en": "small"},
+          {"ru": "высокий", "en": "tall"},
+          {"ru": "широкий", "en": "wide"},
+          {"ru": "тяжёлый", "en": "heavy"}
+        ],
+        "correctIndex": 0,
+        "explanationRu": "Антонимы — слова с противоположным значением: большой — маленький.",
+        "explanationEn": "Antonyms are words with opposite meanings: большой (big) — маленький (small)."
+      },
+      {
+        "section": "vocabulary",
+        "promptRu": "Где можно купить лекарства?",
+        "promptEn": "Where can you buy medicine?",
+        "options": [
+          {"ru": "в аптеке", "en": "at a pharmacy"},
+          {"ru": "в библиотеке", "en": "at a library"},
+          {"ru": "на почте", "en": "at the post office"},
+          {"ru": "в булочной", "en": "at a bakery"}
+        ],
+        "correctIndex": 0,
+        "explanationRu": "Лекарства продаются в аптеке.",
+        "explanationEn": "Medicine is sold at an аптека (pharmacy)."
+      },
+      {
+        "section": "vocabulary",
+        "promptRu": "Какое слово близко по значению слову «врач»?",
+        "promptEn": "Which word is close in meaning to «врач» (physician)?",
+        "options": [
+          {"ru": "учитель", "en": "teacher"},
+          {"ru": "доктор", "en": "doctor"},
+          {"ru": "водитель", "en": "driver"},
+          {"ru": "повар", "en": "cook"}
+        ],
+        "correctIndex": 1,
+        "explanationRu": "Врач и доктор — синонимы.",
+        "explanationEn": "Врач and доктор are synonyms."
+      },
+      {
+        "section": "grammar",
+        "promptRu": "Вставьте слово в нужной форме: Я живу в ___ (Москва).",
+        "promptEn": "Fill in the correct form: I live in ___ (Moscow).",
+        "options": [
+          {"ru": "Москва"},
+          {"ru": "Москве"},
+          {"ru": "Москву"},
+          {"ru": "Москвой"}
+        ],
+        "correctIndex": 1,
+        "explanationRu": "После предлога «в» при ответе на вопрос «где?» используется предложный падеж: в Москве.",
+        "explanationEn": "After «в» answering «где?» (where?) we use the prepositional case: в Москве."
+      },
+      {
+        "section": "grammar",
+        "promptRu": "Вставьте слово в нужной форме: У меня нет ___ (брат).",
+        "promptEn": "Fill in the correct form: I have no ___ (brother).",
+        "options": [
+          {"ru": "брат"},
+          {"ru": "брата"},
+          {"ru": "брату"},
+          {"ru": "братом"}
+        ],
+        "correctIndex": 1,
+        "explanationRu": "После «нет» используется родительный падеж: нет брата.",
+        "explanationEn": "After «нет» we use the genitive case: нет брата."
+      },
+      {
+        "section": "grammar",
+        "promptRu": "Выберите правильную форму глагола: Вчера она ___ письмо.",
+        "promptEn": "Choose the correct verb form: Yesterday she ___ a letter.",
+        "options": [
+          {"ru": "пишет"},
+          {"ru": "будет писать"},
+          {"ru": "писала"},
+          {"ru": "писал"}
+        ],
+        "correctIndex": 2,
+        "explanationRu": "«Вчера» — прошедшее время; подлежащее «она» — женский род: писала.",
+        "explanationEn": "«Вчера» (yesterday) requires the past tense, and «она» is feminine: писала."
+      },
+      {
+        "section": "reading",
+        "passageRu": "Московский метрополитен открылся 15 мая 1935 года. Первая линия была небольшой: на ней было всего 13 станций. Сегодня метро — самый удобный и быстрый транспорт в Москве. Многие станции очень красивые и похожи на дворцы, поэтому сюда приходят не только пассажиры, но и туристы.",
+        "passageEn": "The Moscow metro opened on 15 May 1935. The first line was small: it had only 13 stations. Today the metro is the most convenient and fastest transport in Moscow. Many stations are very beautiful and look like palaces, so not only passengers but also tourists come here.",
+        "promptRu": "Когда открылся Московский метрополитен?",
+        "promptEn": "When did the Moscow metro open?",
+        "options": [
+          {"ru": "в 1935 году", "en": "in 1935"},
+          {"ru": "в 1953 году", "en": "in 1953"},
+          {"ru": "в 1913 году", "en": "in 1913"},
+          {"ru": "в 2000 году", "en": "in 2000"}
+        ],
+        "correctIndex": 0,
+        "explanationRu": "В тексте сказано: «открылся 15 мая 1935 года».",
+        "explanationEn": "The text says: it opened on 15 May 1935."
+      },
+      {
+        "section": "reading",
+        "passageRu": "Московский метрополитен открылся 15 мая 1935 года. Первая линия была небольшой: на ней было всего 13 станций. Сегодня метро — самый удобный и быстрый транспорт в Москве. Многие станции очень красивые и похожи на дворцы, поэтому сюда приходят не только пассажиры, но и туристы.",
+        "passageEn": "The Moscow metro opened on 15 May 1935. The first line was small: it had only 13 stations. Today the metro is the most convenient and fastest transport in Moscow. Many stations are very beautiful and look like palaces, so not only passengers but also tourists come here.",
+        "promptRu": "Почему на станции метро приходят туристы?",
+        "promptEn": "Why do tourists come to the metro stations?",
+        "options": [
+          {"ru": "Там продают билеты в театр.", "en": "Theatre tickets are sold there."},
+          {"ru": "Многие станции красивые и похожи на дворцы.", "en": "Many stations are beautiful and look like palaces."},
+          {"ru": "Там можно жить.", "en": "You can live there."},
+          {"ru": "Там бесплатно кормят.", "en": "Food is free there."}
+        ],
+        "correctIndex": 1,
+        "explanationRu": "В тексте: «Многие станции очень красивые и похожи на дворцы, поэтому сюда приходят… туристы».",
+        "explanationEn": "The text: “Many stations are very beautiful and look like palaces, so … tourists come here.”"
+      },
+      {
+        "section": "history",
+        "promptRu": "Кто был первым человеком в космосе?",
+        "promptEn": "Who was the first person in space?",
+        "options": [
+          {"ru": "Герман Титов", "en": "Gherman Titov"},
+          {"ru": "Юрий Гагарин", "en": "Yuri Gagarin"},
+          {"ru": "Валентина Терешкова", "en": "Valentina Tereshkova"},
+          {"ru": "Алексей Леонов", "en": "Alexei Leonov"}
+        ],
+        "correctIndex": 1,
+        "explanationRu": "Юрий Гагарин полетел в космос 12 апреля 1961 года. Этот день отмечают как День космонавтики.",
+        "explanationEn": "Yuri Gagarin flew into space on 12 April 1961. The day is celebrated as Cosmonautics Day."
+      },
+      {
+        "section": "history",
+        "promptRu": "В каком году началась Великая Отечественная война?",
+        "promptEn": "In what year did the Great Patriotic War begin?",
+        "options": [
+          {"ru": "1939", "en": "1939"},
+          {"ru": "1941", "en": "1941"},
+          {"ru": "1943", "en": "1943"},
+          {"ru": "1945", "en": "1945"}
+        ],
+        "correctIndex": 1,
+        "explanationRu": "Война началась 22 июня 1941 года и закончилась Победой 9 мая 1945 года.",
+        "explanationEn": "The war began on 22 June 1941 and ended with Victory on 9 May 1945."
+      },
+      {
+        "section": "history",
+        "promptRu": "Какой князь крестил Русь в 988 году?",
+        "promptEn": "Which prince baptised Rus in 988?",
+        "options": [
+          {"ru": "Владимир", "en": "Vladimir"},
+          {"ru": "Юрий Долгорукий", "en": "Yuri Dolgorukiy"},
+          {"ru": "Александр Невский", "en": "Alexander Nevsky"},
+          {"ru": "Иван III", "en": "Ivan III"}
+        ],
+        "correctIndex": 0,
+        "explanationRu": "Князь Владимир крестил Русь в 988 году.",
+        "explanationEn": "Prince Vladimir baptised Rus in 988."
+      },
+      {
+        "section": "law",
+        "promptRu": "Как называется основной закон Российской Федерации?",
+        "promptEn": "What is the fundamental law of the Russian Federation called?",
+        "options": [
+          {"ru": "Гражданский кодекс", "en": "Civil Code"},
+          {"ru": "Конституция", "en": "Constitution"},
+          {"ru": "Трудовой кодекс", "en": "Labour Code"},
+          {"ru": "Устав", "en": "Charter"}
+        ],
+        "correctIndex": 1,
+        "explanationRu": "Конституция РФ имеет высшую юридическую силу. Она принята всенародным голосованием 12 декабря 1993 года.",
+        "explanationEn": "The Constitution has the highest legal force. It was adopted by a popular vote on 12 December 1993."
+      },
+      {
+        "section": "law",
+        "promptRu": "По какому номеру можно вызвать скорую медицинскую помощь?",
+        "promptEn": "Which number do you call for an ambulance?",
+        "options": [
+          {"ru": "101", "en": "101 (fire)"},
+          {"ru": "102", "en": "102 (police)"},
+          {"ru": "103", "en": "103 (ambulance)"},
+          {"ru": "104", "en": "104 (gas emergency)"}
+        ],
+        "correctIndex": 2,
+        "explanationRu": "101 — пожарная охрана, 102 — полиция, 103 — скорая помощь, 104 — газовая служба. Единый номер экстренных служб — 112.",
+        "explanationEn": "101 is the fire service, 102 police, 103 ambulance, 104 gas service. The single emergency number is 112."
+      },
+      {
+        "section": "law",
+        "promptRu": "С какого возраста человек в России становится совершеннолетним?",
+        "promptEn": "At what age does a person become an adult in Russia?",
+        "options": [
+          {"ru": "с 14 лет", "en": "from 14"},
+          {"ru": "с 16 лет", "en": "from 16"},
+          {"ru": "с 18 лет", "en": "from 18"},
+          {"ru": "с 21 года", "en": "from 21"}
+        ],
+        "correctIndex": 2,
+        "explanationRu": "Полная дееспособность наступает с 18 лет.",
+        "explanationEn": "Full legal capacity begins at 18."
+      }
+    ]
+  },
+  {
+    "titleRu": "Пробный экзамен №2: повседневная жизнь, история и государство",
+    "titleEn": "Sample exam 2: everyday life, history and the state",
+    "descriptionRu": "Второй учебный вариант: больше заданий на чтение и государственное устройство. Составлен для практики.",
+    "descriptionEn": "A second practice set with more reading tasks and questions on the state system. Written for practice.",
+    "tasks": [
+      {
+        "section": "vocabulary",
+        "promptRu": "Как называется документ, который удостоверяет личность человека?",
+        "promptEn": "What is the document that proves a person's identity called?",
+        "options": [
+          {"ru": "паспорт", "en": "passport"},
+          {"ru": "билет", "en": "ticket"},
+          {"ru": "чек", "en": "receipt"},
+          {"ru": "меню", "en": "menu"}
+        ],
+        "correctIndex": 0,
+        "explanationRu": "Паспорт — основной документ, удостоверяющий личность.",
+        "explanationEn": "A паспорт is the main identity document."
+      },
+      {
+        "section": "vocabulary",
+        "promptRu": "Что такое «зарплата»?",
+        "promptEn": "What is «зарплата» (salary)?",
+        "options": [
+          {"ru": "деньги, которые человек получает за работу", "en": "money a person receives for work"},
+          {"ru": "деньги, которые человек платит за квартиру", "en": "money a person pays for an apartment"},
+          {"ru": "место, где работают", "en": "a place where people work"},
+          {"ru": "время отдыха", "en": "rest time"}
+        ],
+        "correctIndex": 0,
+        "explanationRu": "Зарплата (заработная плата) — оплата труда.",
+        "explanationEn": "Зарплата (заработная плата) is payment for work."
+      },
+      {
+        "section": "grammar",
+        "promptRu": "Вставьте слово в нужной форме: Я читаю интересную ___ (книга).",
+        "promptEn": "Fill in the correct form: I am reading an interesting ___ (book).",
+        "options": [
+          {"ru": "книга"},
+          {"ru": "книги"},
+          {"ru": "книгу"},
+          {"ru": "книгой"}
+        ],
+        "correctIndex": 2,
+        "explanationRu": "Прямое дополнение после «читать» (что?) — винительный падеж: книгу.",
+        "explanationEn": "The direct object after «читать» (what?) takes the accusative: книгу."
+      },
+      {
+        "section": "grammar",
+        "promptRu": "Выберите правильный вариант: Я говорю ___ другом по телефону.",
+        "promptEn": "Choose the correct option: I am talking ___ a friend on the phone.",
+        "options": [
+          {"ru": "с"},
+          {"ru": "в"},
+          {"ru": "на"},
+          {"ru": "к"}
+        ],
+        "correctIndex": 0,
+        "explanationRu": "«Говорить с кем?» — предлог «с» и творительный падеж: с другом.",
+        "explanationEn": "“Talk with whom?” uses «с» and the instrumental case: с другом."
+      },
+      {
+        "section": "grammar",
+        "promptRu": "Как правильно: одно окно — два ___?",
+        "promptEn": "Which is correct: one window — two ___?",
+        "options": [
+          {"ru": "окна"},
+          {"ru": "окно"},
+          {"ru": "окон"},
+          {"ru": "окнов"}
+        ],
+        "correctIndex": 0,
+        "explanationRu": "После «два» существительное стоит в родительном падеже единственного числа: два окна.",
+        "explanationEn": "After «два» the noun takes the genitive singular: два окна."
+      },
+      {
+        "section": "reading",
+        "passageRu": "Уважаемые пациенты! Поликлиника работает с понедельника по пятницу с 8:00 до 20:00. В субботу приём ведётся с 9:00 до 15:00. Воскресенье — выходной день. Записаться на приём к врачу можно по телефону регистратуры или через сайт поликлиники.",
+        "passageEn": "Dear patients! The clinic is open Monday to Friday from 8:00 to 20:00. On Saturday appointments run from 9:00 to 15:00. Sunday is a day off. You can make a doctor's appointment by phoning the reception desk or via the clinic's website.",
+        "promptRu": "В какой день поликлиника не работает?",
+        "promptEn": "On which day is the clinic closed?",
+        "options": [
+          {"ru": "в субботу", "en": "on Saturday"},
+          {"ru": "в пятницу", "en": "on Friday"},
+          {"ru": "в воскресенье", "en": "on Sunday"},
+          {"ru": "в понедельник", "en": "on Monday"}
+        ],
+        "correctIndex": 2,
+        "explanationRu": "В объявлении: «Воскресенье — выходной день».",
+        "explanationEn": "The notice says: “Sunday is a day off.”"
+      },
+      {
+        "section": "reading",
+        "passageRu": "Уважаемые пациенты! Поликлиника работает с понедельника по пятницу с 8:00 до 20:00. В субботу приём ведётся с 9:00 до 15:00. Воскресенье — выходной день. Записаться на приём к врачу можно по телефону регистратуры или через сайт поликлиники.",
+        "passageEn": "Dear patients! The clinic is open Monday to Friday from 8:00 to 20:00. On Saturday appointments run from 9:00 to 15:00. Sunday is a day off. You can make a doctor's appointment by phoning the reception desk or via the clinic's website.",
+        "promptRu": "До какого часа поликлиника принимает пациентов в субботу?",
+        "promptEn": "Until what time does the clinic see patients on Saturday?",
+        "options": [
+          {"ru": "до 9:00", "en": "until 9:00"},
+          {"ru": "до 15:00", "en": "until 15:00"},
+          {"ru": "до 20:00", "en": "until 20:00"},
+          {"ru": "до 8:00", "en": "until 8:00"}
+        ],
+        "correctIndex": 1,
+        "explanationRu": "«В субботу приём ведётся с 9:00 до 15:00».",
+        "explanationEn": "“On Saturday appointments run from 9:00 to 15:00.”"
+      },
+      {
+        "section": "history",
+        "promptRu": "Какой царь основал Санкт-Петербург?",
+        "promptEn": "Which tsar founded St Petersburg?",
+        "options": [
+          {"ru": "Иван Грозный", "en": "Ivan the Terrible"},
+          {"ru": "Пётр I", "en": "Peter I"},
+          {"ru": "Николай II", "en": "Nicholas II"},
+          {"ru": "Александр II", "en": "Alexander II"}
+        ],
+        "correctIndex": 1,
+        "explanationRu": "Пётр I основал Санкт-Петербург в 1703 году.",
+        "explanationEn": "Peter I founded St Petersburg in 1703."
+      },
+      {
+        "section": "history",
+        "promptRu": "С какой армией воевала Россия в Отечественной войне 1812 года?",
+        "promptEn": "Which army did Russia fight in the Patriotic War of 1812?",
+        "options": [
+          {"ru": "с армией Наполеона", "en": "Napoleon's army"},
+          {"ru": "с армией Карла XII", "en": "the army of Charles XII"},
+          {"ru": "с армией Гитлера", "en": "Hitler's army"},
+          {"ru": "с армией Батыя", "en": "Batu Khan's army"}
+        ],
+        "correctIndex": 0,
+        "explanationRu": "В 1812 году Россия воевала с армией Наполеона; главное сражение — Бородинское.",
+        "explanationEn": "In 1812 Russia fought Napoleon's army; the main battle was Borodino."
+      },
+      {
+        "section": "history",
+        "promptRu": "Кто основал Московский университет в 1755 году?",
+        "promptEn": "Who founded Moscow University in 1755?",
+        "options": [
+          {"ru": "Михаил Ломоносов (по его проекту)", "en": "Mikhail Lomonosov (on his proposal)"},
+          {"ru": "Александр Пушкин", "en": "Alexander Pushkin"},
+          {"ru": "Дмитрий Менделеев", "en": "Dmitri Mendeleev"},
+          {"ru": "Фёдор Достоевский", "en": "Fyodor Dostoevsky"}
+        ],
+        "correctIndex": 0,
+        "explanationRu": "Университет был основан по проекту Михаила Ломоносова и Ивана Шувалова. Сегодня он носит имя Ломоносова.",
+        "explanationEn": "The university was founded on the proposal of Mikhail Lomonosov and Ivan Shuvalov. It now bears Lomonosov's name."
+      },
+      {
+        "section": "law",
+        "promptRu": "Какие палаты входят в Федеральное Собрание Российской Федерации?",
+        "promptEn": "Which chambers make up the Federal Assembly of the Russian Federation?",
+        "options": [
+          {"ru": "Совет Федерации и Государственная Дума", "en": "The Federation Council and the State Duma"},
+          {"ru": "Правительство и Президент", "en": "The Government and the President"},
+          {"ru": "Верховный суд и Конституционный суд", "en": "The Supreme Court and the Constitutional Court"},
+          {"ru": "Госсовет и Совбез", "en": "The State Council and the Security Council"}
+        ],
+        "correctIndex": 0,
+        "explanationRu": "Федеральное Собрание — парламент России; оно состоит из двух палат.",
+        "explanationEn": "The Federal Assembly is Russia's parliament and has two chambers."
+      },
+      {
+        "section": "law",
+        "promptRu": "Какой язык является государственным языком Российской Федерации на всей её территории?",
+        "promptEn": "Which language is the state language of the Russian Federation throughout its territory?",
+        "options": [
+          {"ru": "русский", "en": "Russian"},
+          {"ru": "английский", "en": "English"},
+          {"ru": "татарский", "en": "Tatar"},
+          {"ru": "церковнославянский", "en": "Church Slavonic"}
+        ],
+        "correctIndex": 0,
+        "explanationRu": "Статья 68 Конституции: государственный язык на всей территории России — русский.",
+        "explanationEn": "Article 68 of the Constitution: Russian is the state language across the whole country."
+      },
+      {
+        "section": "law",
+        "promptRu": "Когда в России отмечают День России?",
+        "promptEn": "When is Russia Day celebrated?",
+        "options": [
+          {"ru": "9 мая", "en": "9 May"},
+          {"ru": "12 июня", "en": "12 June"},
+          {"ru": "4 ноября", "en": "4 November"},
+          {"ru": "1 января", "en": "1 January"}
+        ],
+        "correctIndex": 1,
+        "explanationRu": "День России отмечают 12 июня. 9 мая — День Победы, 4 ноября — День народного единства.",
+        "explanationEn": "Russia Day is 12 June. 9 May is Victory Day; 4 November is National Unity Day."
+      }
+    ]
+  }
+]

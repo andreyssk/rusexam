@@ -1,0 +1,34 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-rutest}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rutest}
+      POSTGRES_DB: ${POSTGRES_DB:-rutest}
+    ports:
+      - "${POSTGRES_PORT:-5434}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-rutest}"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build: ./backend
+    profiles: ["full"]
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-rutest}:${POSTGRES_PASSWORD:-rutest}@db:5432/${POSTGRES_DB:-rutest}?sslmode=disable
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:?set ADMIN_USERNAME in .env}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD in .env}
+      SEED_SAMPLE_DATA: ${SEED_SAMPLE_DATA:-false}
+    ports:
+      - "8081:8081"
+
+volumes:
+  pgdata:
