@@ -10,11 +10,13 @@ type Props = {
   correctIndex?: number
   disabled?: boolean
   onSelect?: (index: number) => void
+  /** The order the options are shown in, as indexes into `task.options`; selectedIndex, correctIndex and onSelect keep using the original indexes. */
+  order?: number[]
 }
 
 const LETTERS = 'ABCDEFGH'
 
-export function TaskView({ task, selectedIndex, correctIndex, disabled, onSelect }: Props) {
+export function TaskView({ task, selectedIndex, correctIndex, disabled, onSelect, order }: Props) {
   const { t } = useI18n()
   const revealed = correctIndex !== undefined
 
@@ -34,7 +36,8 @@ export function TaskView({ task, selectedIndex, correctIndex, disabled, onSelect
       </div>
 
       <ul className="space-y-2" role="radiogroup">
-        {task.options.map((opt, i) => {
+        {(order ?? task.options.map((_, i) => i)).map((i, pos) => {
+          const opt = task.options[i]
           const selected = selectedIndex === i
           const isCorrect = revealed && correctIndex === i
           const isWrong = revealed && selected && correctIndex !== i
@@ -48,7 +51,7 @@ export function TaskView({ task, selectedIndex, correctIndex, disabled, onSelect
                 onClick={() => onSelect?.(i)}
                 className={cn(
                   'flex w-full items-center gap-3 rounded-2xl border-2 border-b-4 bg-card px-4 py-3 text-left font-bold transition-colors',
-                  !disabled && 'cursor-pointer hover:bg-muted active:border-b-2 active:translate-y-0.5',
+                  !disabled && 'cursor-pointer hover:bg-muted active:translate-y-0.5',
                   selected && !revealed && 'border-accent bg-accent-soft text-accent hover:bg-accent-soft',
                   isCorrect && 'border-success bg-success-soft text-success',
                   isWrong && 'border-destructive bg-danger-soft text-destructive',
@@ -62,7 +65,7 @@ export function TaskView({ task, selectedIndex, correctIndex, disabled, onSelect
                     isWrong && 'border-destructive bg-destructive text-destructive-foreground',
                   )}
                 >
-                  {isCorrect ? <Check size={14} aria-label="correct" /> : isWrong ? <X size={14} aria-label="wrong" /> : LETTERS[i]}
+                  {isCorrect ? <Check size={14} aria-label="correct" /> : isWrong ? <X size={14} aria-label="wrong" /> : LETTERS[pos]}
                 </span>
                 <span lang="ru" translate="no" className="block text-lg">{opt}</span>
               </button>

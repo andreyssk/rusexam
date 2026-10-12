@@ -1,8 +1,9 @@
-import { ChevronLeft, ChevronRight, Clock, X } from 'lucide-react'
+import { ChevronDown, ChevronLeft, ChevronRight, Clock, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Navigate, useBlocker } from 'react-router-dom'
 import { cn } from '@/shared/lib/cn'
 import { formatDuration } from '@/shared/lib/format'
+import { seededShuffle } from '@/shared/lib/shuffle'
 import { useI18n, type TKey } from '@/shared/lib/i18n'
 import { useConfirm } from '@/shared/ui/confirm'
 import { Badge } from '@/shared/ui/badge'
@@ -22,7 +23,15 @@ const MAX_FAILS = 3
 /** A celebration every this many correct answers in a row. */
 const STREAK_STEP = 5
 
-const NOPE_COUNT = 8
+const NOPE_COUNT = 23
+const CHEER_COUNT = 4
+
+function countMessage(streak: number): TKey {
+  if (streak === 5) return 'streak.5'
+  if (streak === 10) return 'streak.10'
+  if (streak === 15) return 'streak.15'
+  return 'streak.more'
+}
 
 type Retry = { fails: number; done: boolean }
 type Progress = { pos: number; repeats: number[]; retries: [number, Retry][] }
@@ -69,7 +78,9 @@ export function AttemptRunner({ attemptId }: { attemptId: number }) {
 function Runner({ attemptId, data }: { attemptId: number; data: AttemptState }) {
   const { t, pick } = useI18n()
   const confirm = useConfirm()
-  const { attempt, tasks } = data
+  const { attempt } = data
+  // Every session gets its own question order (seeded by the attempt, so a reload keeps it).
+  const tasks = useMemo(() => seededShuffle(data.tasks, attemptId), [data.tasks, attemptId])
   const total = tasks.length
   const isTraining = attempt.mode === 'training'
 
@@ -97,7 +108,7 @@ function Runner({ attemptId, data }: { attemptId: number; data: AttemptState }) 
   const streak = useRef(0)
   // Which "nope" message the current mistake gets.
   const [nopeIdx, setNopeIdx] = useState(0)
-  const [celebrate, setCelebrate] = useState<number | null>(null)
+  const [celebrate, setCelebrate] = useState<{ streak: number; message: TKey } | null>(null)
   const stopCelebrating = useCallback(() => setCelebrate(null), [])
 
   useEffect(() => {
@@ -109,6 +120,8 @@ function Runner({ attemptId, data }: { attemptId: number; data: AttemptState }) 
   const queue = [...tasks.map((tk) => tk.id), ...repeats]
   const task = tasks.find((tk) => tk.id === queue[Math.min(pos, queue.length - 1)]) ?? tasks[0]
   const answer = answers.get(task.id)
+  // Answers are shown in a random order too, different for every task of the session.
+  const optionOrder = useMemo(() => seededShuffle(task.options.map((_, i) => i), attemptId * 100003 + task.id), [task, attemptId])
   const answeredCount = answers.size
   const isRepeat = pos >= total
   const retry = retries.get(task.id)
@@ -127,12 +140,17 @@ function Runner({ attemptId, data }: { attemptId: number; data: AttemptState }) 
     if (!isTraining) return
     if (correct) {
       streak.current += 1
-      if (streak.current % STREAK_STEP === 0) setCelebrate(streak.current)
+      if (streak.current % STREAK_STEP === 0) {
+        // One of the cheers, or the plain count message for this streak.
+        const pool: TKey[] = [...Array.from({ length: CHEER_COUNT }, (_, i) => `cheer.${i}` as TKey), countMessage(streak.current)]
+        setCelebrate({ streak: streak.current, message: pool[Math.floor(Math.random() * pool.length)] })
+      }
       if (retry) setRetries((m) => new Map(m).set(task.id, { ...retry, done: true }))
       return
     }
     streak.current = 0
-    setNopeIdx(Math.floor(Math.random() * NOPE_COUNT))
+    // Never the same title twice in a row.
+    setNopeIdx((prev) => (prev + 1 + Math.floor(Math.random() * (NOPE_COUNT - 1))) % NOPE_COUNT)
     const fails = (retry?.fails ?? 0) + 1
     const done = fails >= MAX_FAILS
     setRetries((m) => new Map(m).set(task.id, { fails, done }))
@@ -206,6 +224,8 @@ function Runner({ attemptId, data }: { attemptId: number; data: AttemptState }) 
   }
 
   const onEnd = async () => {
+    // Finishing after the last answered question needs no confirmation; only ending early does.
+    if (isLast && submitted) return endSession()
     const unanswered = total - answeredCount
     const msg = unanswered > 0 ? t('run.confirm', { n: unanswered }) : t('run.confirmAll')
     if (!(await confirm({ message: msg, confirmLabel: t('run.endSession') }))) return
@@ -250,28 +270,18 @@ function Runner({ attemptId, data }: { attemptId: number; data: AttemptState }) 
 
   const feedbackBody =
     isTraining && submitted ? (
-      <>
-        <p className={cn('text-lg font-extrabold', wasCorrect ? 'text-success' : 'text-destructive')}>
-          {wasCorrect ? t('run.correct') : t(`nope.${nopeIdx % NOPE_COUNT}` as TKey)}
-        </p>
-        {correctText && (
-          <p className="mt-1 text-sm">
-            <span className="font-medium">{t('result.correctAnswer')}: </span>
-            <span lang="ru" translate="no">{correctText}</span>
-          </p>
-        )}
-        {showExplanation && (
-          <p className="mt-1 text-sm">
-            <span className="font-medium">{t('run.explanation')}: </span>
-            <span lang="ru" translate="no">{answer?.explanation}</span>
-          </p>
-        )}
-      </>
+      <Feedback
+        key={`${pos}-${task.id}`}
+        title={wasCorrect ? t('run.correct') : t(`nope.${nopeIdx % NOPE_COUNT}` as TKey)}
+        correct={!!wasCorrect}
+        correctText={correctText}
+        explanation={showExplanation ? answer?.explanation : undefined}
+      />
     ) : null
 
   return (
     <div className="space-y-4">
-      {celebrate !== null && <StreakCelebration streak={celebrate} onDone={stopCelebrating} />}
+      {celebrate !== null && <StreakCelebration streak={celebrate.streak} message={celebrate.message} onDone={stopCelebrating} />}
 
       <div className="flex flex-wrap items-center gap-3">
         {/* Hidden on mobile to save space; screen readers still get it. */}
@@ -310,6 +320,7 @@ function Runner({ attemptId, data }: { attemptId: number; data: AttemptState }) 
           <TaskView
             key={`${pos}-${task.id}`}
             task={task}
+            order={optionOrder}
             selectedIndex={selectedIndex}
             correctIndex={revealed ? answer?.correctIndex : undefined}
             disabled={save.isPending || locked}
@@ -369,7 +380,7 @@ function Runner({ attemptId, data }: { attemptId: number; data: AttemptState }) 
         )}
       >
         {feedbackBody && (
-          <div role="status" className="sheet-up max-h-[45vh] overflow-y-auto px-4 pt-4">
+          <div role="status" className="sheet-up px-4 pt-4">
             {feedbackBody}
           </div>
         )}
@@ -385,6 +396,47 @@ function Runner({ attemptId, data }: { attemptId: number; data: AttemptState }) 
           </Button>
         </div>
       </div>
+    </div>
+  )
+}
+
+/** The verdict of a training answer. The correct answer and the explanation take at most half the screen and can be collapsed. */
+function Feedback({ title, correct, correctText, explanation }: { title: string; correct: boolean; correctText: string | null; explanation?: string }) {
+  const { t } = useI18n()
+  const [collapsed, setCollapsed] = useState(false)
+  const hasDetails = !!correctText || !!explanation
+  return (
+    <div className="flex max-h-[50dvh] flex-col">
+      <div className="flex items-center gap-2">
+        <p className={cn('flex-1 text-lg font-extrabold', correct ? 'text-success' : 'text-destructive')}>{title}</p>
+        {hasDetails && (
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-expanded={!collapsed}
+            aria-label={collapsed ? t('run.showDetails') : t('run.hideDetails')}
+            onClick={() => setCollapsed((c) => !c)}
+          >
+            <ChevronDown size={20} className={cn('transition-transform', !collapsed && 'rotate-180')} />
+          </Button>
+        )}
+      </div>
+      {hasDetails && !collapsed && (
+        <div className="mt-1 min-h-0 overflow-y-auto">
+          {correctText && (
+            <p className="text-sm">
+              <span className="font-medium">{t('result.correctAnswer')}: </span>
+              <span lang="ru" translate="no">{correctText}</span>
+            </p>
+          )}
+          {explanation && (
+            <p className="mt-1 text-sm">
+              <span className="font-medium">{t('run.explanation')}: </span>
+              <span lang="ru" translate="no">{explanation}</span>
+            </p>
+          )}
+        </div>
+      )}
     </div>
   )
 }

@@ -21,12 +21,12 @@ function useStartAttempt(examId: number) {
 }
 
 /** Starts a fresh attempt of the same exam in the same mode (shown on the results page). */
-export function RetryAttempt({ examId, mode }: { examId: number; mode: Mode }) {
+export function RetryAttempt({ examId, mode, className }: { examId: number; mode: Mode; className?: string }) {
   const { t } = useI18n()
   const start = useStartAttempt(examId)
   return (
     <div className="space-y-2">
-      <Button loading={start.isPending} onClick={() => start.mutate(mode)}>
+      <Button className={className} loading={start.isPending} onClick={() => start.mutate(mode)}>
         <RotateCcw size={16} /> {t('result.retry')}
       </Button>
       {start.isError && <ErrorMessage error={start.error} />}

@@ -44,8 +44,12 @@ export function ResultSummary({ attemptId }: { attemptId: number }) {
               <dd className="text-lg font-extrabold">{t(`mode.${attempt.mode}`)}</dd>
             </div>
           </dl>
-          <div className="sm:justify-self-end">
-            <RetryAttempt examId={attempt.examId} mode={attempt.mode} />
+          {/* Its own full-width row, split evenly between the two buttons. */}
+          <div className="grid grid-cols-2 items-start gap-2 sm:col-span-full">
+            <RetryAttempt examId={attempt.examId} mode={attempt.mode} className="w-full" />
+            <Button variant="outline" className="w-full" asChild>
+              <Link to="/">{t('result.toExams')}</Link>
+            </Button>
           </div>
         </CardContent>
       </Card>
