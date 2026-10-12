@@ -122,7 +122,8 @@ export function Header() {
   )
 
   return (
-    <header className="border-b-2 bg-card">
+    // A running session takes the whole screen on mobile; it has its own X to leave.
+    <header className={cn('border-b-2 bg-card', isAttemptRunPath(location.pathname) && 'max-md:hidden')}>
       <div className="mx-auto flex max-w-5xl items-center gap-x-4 px-4 py-3">
         <Button variant="ghost" size="icon" className="md:hidden" aria-label={t('nav.menu')} aria-expanded={open} onClick={() => setOpen(true)}>
           <Menu size={22} />

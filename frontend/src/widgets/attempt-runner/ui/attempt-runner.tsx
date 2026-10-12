@@ -256,7 +256,8 @@ function Runner({ attemptId, data }: { attemptId: number; data: AttemptState }) 
       {celebrate !== null && <StreakCelebration streak={celebrate} onDone={stopCelebrating} />}
 
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-lg font-extrabold">{pick(attempt.examTitleRu, attempt.examTitleEn)}</h1>
+        {/* Hidden on mobile to save space; screen readers still get it. */}
+        <h1 className="sr-only text-lg font-extrabold md:not-sr-only">{pick(attempt.examTitleRu, attempt.examTitleEn)}</h1>
         <Badge className={cn(isTraining ? 'bg-accent-soft text-accent' : 'bg-danger-soft text-destructive')}>
           {t(`mode.${attempt.mode}`)}
         </Badge>
@@ -281,8 +282,9 @@ function Runner({ attemptId, data }: { attemptId: number; data: AttemptState }) 
         <p className="mt-1 text-xs text-muted-foreground">{t('run.answered', { a: answeredCount, n: total })}</p>
       </div>
 
-      <Card>
-        <CardContent className="space-y-5 pt-5">
+      {/* On mobile the question sits directly on the page: no frame, no padding. */}
+      <Card className="max-md:rounded-none max-md:border-0 max-md:bg-transparent">
+        <CardContent className="space-y-5 pt-5 max-md:p-0">
           <p className="text-sm text-muted-foreground">
             {isRepeat ? t('run.repeat') : t('run.question', { i: pos + 1, n: total })} · {t(`section.${task.section}`)}
           </p>
