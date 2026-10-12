@@ -152,3 +152,13 @@
   .confetti-piece { display: none; }
   .streak-card { animation: none; }
 }
+
+/* Feedback sheet in the session's bottom bar. */
+@keyframes sheet-up {
+  from { transform: translateY(16px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.sheet-up { animation: sheet-up 0.18s ease-out; }
+@media (prefers-reduced-motion: reduce) {
+  .sheet-up { animation: none; }
+}

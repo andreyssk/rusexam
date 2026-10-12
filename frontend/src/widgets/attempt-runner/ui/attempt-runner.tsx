@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Clock } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Clock, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Navigate, useBlocker } from 'react-router-dom'
 import { cn } from '@/shared/lib/cn'
@@ -206,8 +206,50 @@ function Runner({ attemptId, data }: { attemptId: number; data: AttemptState }) 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [blocker.state])
 
+  // The mobile action bar is fixed to the bottom; a spacer of the same height keeps the content scrollable past it.
+  const bar = useRef<HTMLDivElement>(null)
+  const [barHeight, setBarHeight] = useState(96)
+  useEffect(() => {
+    const el = bar.current
+    if (!el) return
+    const ro = new ResizeObserver(() => setBarHeight(el.offsetHeight))
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
   const showExplanation = revealed && answer?.explanation
   const correctText = !wasCorrect && revealed && answer?.correctIndex != null ? task.options[answer.correctIndex] : null
+
+  // Mobile has a single full-width button that never moves; what it does depends on where the learner is.
+  type Action = { label: string; onClick: () => void; disabled?: boolean; loading?: boolean }
+  const action: Action = (() => {
+    const finishNow = { label: t('run.finish'), loading: finish.isPending, onClick: () => void onEnd() }
+    const next = { label: isTraining ? t('run.continue') : t('run.next'), onClick: () => go(pos + 1) }
+    const check = { label: isTraining ? t('run.checkAnswer') : t('run.confirmAnswer'), loading: save.isPending, onClick: onConfirm }
+    if (isTraining) return !submitted ? { ...check, disabled: !canConfirm } : isLast ? finishNow : next
+    return canConfirm ? check : isLast ? finishNow : next
+  })()
+
+  const feedbackBody =
+    isTraining && submitted ? (
+      <>
+        <p className={cn('text-lg font-extrabold', wasCorrect ? 'text-success' : 'text-destructive')}>
+          {wasCorrect ? t('run.correct') : t(`nope.${nopeIdx % NOPE_COUNT}` as TKey)}
+        </p>
+        {correctText && (
+          <p className="mt-1 text-sm">
+            <span className="font-medium">{t('result.correctAnswer')}: </span>
+            <span lang="ru" translate="no">{correctText}</span>
+          </p>
+        )}
+        {showExplanation && (
+          <p className="mt-1 text-sm">
+            <span className="font-medium">{t('run.explanation')}: </span>
+            <span lang="ru" translate="no">{answer?.explanation}</span>
+          </p>
+        )}
+      </>
+    ) : null
 
   return (
     <div className="space-y-4">
@@ -221,6 +263,16 @@ function Runner({ attemptId, data }: { attemptId: number; data: AttemptState }) 
         <div className="ml-auto flex items-center gap-1.5 tabular-nums text-muted-foreground" aria-label={t('run.timer')}>
           <Clock size={16} />
           {formatDuration(timer.seconds)}
+        </div>
+        <div className="flex gap-1 md:hidden">
+          {!isTraining && pos > 0 && (
+            <Button variant="ghost" size="icon" aria-label={t('run.prev')} onClick={() => go(pos - 1)}>
+              <ChevronLeft size={20} />
+            </Button>
+          )}
+          <Button variant="ghost" size="icon" aria-label={t('run.endSession')} disabled={finish.isPending} onClick={() => void onEnd()}>
+            <X size={20} />
+          </Button>
         </div>
       </div>
 
@@ -245,36 +297,22 @@ function Runner({ attemptId, data }: { attemptId: number; data: AttemptState }) 
           />
 
           {!locked && (
-            <Button loading={save.isPending} disabled={!canConfirm} onClick={onConfirm}>
+            <Button className="hidden md:inline-flex" loading={save.isPending} disabled={!canConfirm} onClick={onConfirm}>
               {isTraining ? t('run.checkAnswer') : t('run.confirmAnswer')}
             </Button>
           )}
 
           {save.isError && <ErrorMessage error={new Error(t('run.saveFailed'))} />}
 
-          {isTraining && submitted && (
-            <div role="status" className={cn('rounded-2xl p-4', wasCorrect ? 'bg-success-soft' : 'bg-danger-soft')}>
-              <p className={cn('text-lg font-extrabold', wasCorrect ? 'text-success' : 'text-destructive')}>
-                {wasCorrect ? t('run.correct') : t(`nope.${nopeIdx % NOPE_COUNT}` as TKey)}
-              </p>
-              {correctText && (
-                <p className="mt-1 text-sm">
-                  <span className="font-medium">{t('result.correctAnswer')}: </span>
-                  <span lang="ru" translate="no">{correctText}</span>
-                </p>
-              )}
-              {showExplanation && (
-                <p className="mt-1 text-sm">
-                  <span className="font-medium">{t('run.explanation')}: </span>
-                  <span lang="ru" translate="no">{answer?.explanation}</span>
-                </p>
-              )}
+          {feedbackBody && (
+            <div role="status" className={cn('hidden rounded-2xl p-4 md:block', wasCorrect ? 'bg-success-soft' : 'bg-danger-soft')}>
+              {feedbackBody}
             </div>
           )}
         </CardContent>
       </Card>
 
-      <div className="flex items-center justify-between gap-2">
+      <div className="hidden items-center justify-between gap-2 md:flex">
         {/* Training moves strictly forward (mistakes come back at the end); an exam can be revisited freely. */}
         {!isTraining ? (
           <Button variant="outline" disabled={pos === 0} onClick={() => go(pos - 1)}>
@@ -295,6 +333,32 @@ function Runner({ attemptId, data }: { attemptId: number; data: AttemptState }) 
         </div>
       </div>
       {finish.isError && <ErrorMessage error={finish.error} />}
+
+      <div aria-hidden="true" className="md:hidden" style={{ height: barHeight }} />
+      <div
+        ref={bar}
+        className={cn(
+          'fixed inset-x-0 bottom-0 z-40 border-t-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:hidden',
+          feedbackBody ? (wasCorrect ? 'bg-success-soft' : 'bg-danger-soft') : 'bg-card',
+        )}
+      >
+        {feedbackBody && (
+          <div role="status" className="sheet-up max-h-[45vh] overflow-y-auto px-4 pt-4">
+            {feedbackBody}
+          </div>
+        )}
+        <div className="px-4 pt-3">
+          <Button
+            className="h-12 w-full text-base"
+            variant={isTraining && submitted && !wasCorrect ? 'destructive' : 'default'}
+            loading={action.loading}
+            disabled={action.disabled}
+            onClick={action.onClick}
+          >
+            {action.label}
+          </Button>
+        </div>
+      </div>
     </div>
   )
 }

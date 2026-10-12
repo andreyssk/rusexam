@@ -7,6 +7,7 @@ import { Button } from '@/shared/ui/button'
 import { Tooltip } from '@/shared/ui/tooltip'
 import { LanguageSwitch } from '@/features/switch-language'
 import { ThemeSwitch } from '@/features/switch-theme'
+import { isAttemptRunPath } from '@/shared/lib/routes'
 import { useStreak } from '@/entities/attempt'
 import { useAuth } from '@/entities/user'
 
@@ -72,8 +73,9 @@ function StreakBadge() {
 function BottomNav() {
   const { user } = useAuth()
   const items = useNavItems()
-  // A single tab is pointless; visitors only have the exam list.
-  if (!user) return null
+  const { pathname } = useLocation()
+  // A single tab is pointless (visitors only have the exam list), and a running session has its own action bar.
+  if (!user || isAttemptRunPath(pathname)) return null
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 flex border-t-2 bg-card pb-[env(safe-area-inset-bottom)] md:hidden">
       {items.map(({ to, label, icon: Icon, end, active }) => (

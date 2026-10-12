@@ -1,4 +1,6 @@
 import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
+import { isAttemptRunPath } from '@/shared/lib/routes'
+import { cn } from '@/shared/lib/cn'
 import { Loading } from '@/shared/ui/states'
 import { Header } from '@/widgets/header'
 import { useAuth } from '@/entities/user'
@@ -14,10 +16,13 @@ import { NotFoundPage } from '@/pages/not-found'
 import { ResultPage } from '@/pages/result'
 
 function Layout() {
+  const { pathname } = useLocation()
+  // The tab bar is hidden during a session, so no room is reserved for it.
+  const tabBar = !isAttemptRunPath(pathname)
   return (
     <div className="min-h-dvh">
       <Header />
-      <main className="mx-auto max-w-5xl px-4 py-6 pb-[calc(6rem+env(safe-area-inset-bottom))] md:pb-6">
+      <main className={cn('mx-auto max-w-5xl px-4 py-6 md:pb-6', tabBar && 'pb-[calc(6rem+env(safe-area-inset-bottom))]')}>
         <Outlet />
       </main>
     </div>
