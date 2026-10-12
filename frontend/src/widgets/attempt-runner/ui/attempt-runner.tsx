@@ -187,6 +187,24 @@ function Runner({ attemptId, data }: { attemptId: number; data: AttemptState }) 
     }
   }
 
+  // Exam: a single button saves the pick (if any) and moves on; on the last question it ends the session without asking.
+  const onExamNext = async () => {
+    if (canConfirm && picked !== undefined) {
+      try {
+        await save.mutateAsync({ taskId: task.id, selectedIndex: picked })
+      } catch {
+        return // shown through save.isError below
+      }
+      setPending((m) => {
+        const n = new Map(m)
+        n.delete(pos)
+        return n
+      })
+    }
+    if (isLast) await endSession()
+    else go(pos + 1)
+  }
+
   const onEnd = async () => {
     const unanswered = total - answeredCount
     const msg = unanswered > 0 ? t('run.confirm', { n: unanswered }) : t('run.confirmAll')
@@ -224,10 +242,10 @@ function Runner({ attemptId, data }: { attemptId: number; data: AttemptState }) 
   type Action = { label: string; onClick: () => void; disabled?: boolean; loading?: boolean }
   const action: Action = (() => {
     const finishNow = { label: t('run.finish'), loading: finish.isPending, onClick: () => void onEnd() }
-    const next = { label: isTraining ? t('run.continue') : t('run.next'), onClick: () => go(pos + 1) }
-    const check = { label: isTraining ? t('run.checkAnswer') : t('run.confirmAnswer'), loading: save.isPending, onClick: onConfirm }
+    const next = { label: t('run.continue'), onClick: () => go(pos + 1) }
+    const check = { label: t('run.checkAnswer'), loading: save.isPending, onClick: onConfirm }
     if (isTraining) return !submitted ? { ...check, disabled: !canConfirm } : isLast ? finishNow : next
-    return canConfirm ? check : isLast ? finishNow : next
+    return { label: isLast ? t('run.finish') : t('run.next'), loading: save.isPending || finish.isPending, onClick: () => void onExamNext() }
   })()
 
   const feedbackBody =
@@ -298,9 +316,9 @@ function Runner({ attemptId, data }: { attemptId: number; data: AttemptState }) 
             onSelect={onSelect}
           />
 
-          {!locked && (
+          {isTraining && !locked && (
             <Button className="hidden md:inline-flex" loading={save.isPending} disabled={!canConfirm} onClick={onConfirm}>
-              {isTraining ? t('run.checkAnswer') : t('run.confirmAnswer')}
+              {t('run.checkAnswer')}
             </Button>
           )}
 
@@ -317,22 +335,28 @@ function Runner({ attemptId, data }: { attemptId: number; data: AttemptState }) 
       <div className="hidden items-center justify-between gap-2 md:flex">
         {/* Training moves strictly forward (mistakes come back at the end); an exam can be revisited freely. */}
         {!isTraining ? (
-          <Button variant="outline" disabled={pos === 0} onClick={() => go(pos - 1)}>
+          <Button variant="outline" disabled={pos === 0 || save.isPending} onClick={() => go(pos - 1)}>
             <ChevronLeft size={16} /> {t('run.prev')}
           </Button>
         ) : (
           <span />
         )}
-        <div className="flex gap-2">
-          {!isLast && (
-            <Button variant="outline" disabled={isTraining && !submitted} onClick={() => go(pos + 1)}>
-              {t('run.next')} <ChevronRight size={16} />
+        {isTraining ? (
+          <div className="flex gap-2">
+            {!isLast && (
+              <Button variant="outline" disabled={!submitted} onClick={() => go(pos + 1)}>
+                {t('run.next')} <ChevronRight size={16} />
+              </Button>
+            )}
+            <Button variant={isLast && submitted ? 'default' : 'ghost'} disabled={finish.isPending} onClick={onEnd}>
+              {finish.isPending ? t('run.finishing') : t('run.endSession')}
             </Button>
-          )}
-          <Button variant={isLast && (!isTraining || submitted) ? 'default' : 'ghost'} disabled={finish.isPending} onClick={onEnd}>
-            {finish.isPending ? t('run.finishing') : t('run.endSession')}
+          </div>
+        ) : (
+          <Button loading={save.isPending || finish.isPending} onClick={() => void onExamNext()}>
+            {isLast ? t('run.finish') : <>{t('run.next')} <ChevronRight size={16} /></>}
           </Button>
-        </div>
+        )}
       </div>
       {finish.isError && <ErrorMessage error={finish.error} />}
 

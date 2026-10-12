@@ -82,6 +82,7 @@ export function AdminExamEditor({ examId }: { examId: number }) {
         </CardHeader>
         <CardContent>
           <ExamForm
+            courseId={exam.data.courseId}
             key={exam.dataUpdatedAt}
             initial={exam.data}
             submitLabel={t('admin.save')}
@@ -110,6 +111,7 @@ export function AdminExamEditor({ examId }: { examId: number }) {
 
         {panel?.kind === 'picker' && (
           <TaskPicker
+            courseId={exam.data.courseId}
             excludeIds={new Set(ids)}
             pending={setTasks.isPending}
             onClose={close}
@@ -126,7 +128,7 @@ export function AdminExamEditor({ examId }: { examId: number }) {
               <TaskForm
                 pending={createAndLink.isPending}
                 onCancel={close}
-                onSubmit={(body) => createAndLink.mutate({ body, currentIds: ids }, { onSuccess: close })}
+                onSubmit={(body) => createAndLink.mutate({ body: { ...body, courseId: exam.data.courseId }, currentIds: ids }, { onSuccess: close })}
               />
             </CardContent>
           </Card>

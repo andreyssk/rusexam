@@ -31,6 +31,16 @@ components:
       in: path
       required: true
       schema: { type: integer, format: int64 }
+    CourseID:
+      name: courseID
+      in: path
+      required: true
+      schema: { type: integer, format: int64 }
+    CategoryID:
+      name: categoryID
+      in: path
+      required: true
+      schema: { type: integer, format: int64 }
     TaskID:
       name: taskID
       in: path
@@ -91,10 +101,53 @@ components:
         correctIndex: { type: integer }
         explanation: { type: string }
 
+    Course:
+      type: object
+      required: [id, titleRu, titleEn, flag, examsCount, tasksCount]
+      properties:
+        id: { type: integer, format: int64 }
+        titleRu: { type: string }
+        titleEn: { type: string }
+        flag: { type: string, description: An emoji shown in the header course switcher, usually a flag. }
+        examsCount: { type: integer }
+        tasksCount: { type: integer }
+
+    Category:
+      type: object
+      required: [id, courseId, titleRu, titleEn, examsCount]
+      properties:
+        id: { type: integer, format: int64 }
+        courseId: { type: integer, format: int64 }
+        titleRu: { type: string }
+        titleEn: { type: string }
+        examsCount: { type: integer }
+
+    CategoryInput:
+      type: object
+      properties:
+        courseId:
+          type: integer
+          format: int64
+          description: Required when creating a category; ignored on update (a category never changes course).
+        titleRu: { type: string }
+        titleEn: { type: string }
+
+    CourseInput:
+      type: object
+      required: [flag]
+      properties:
+        titleRu: { type: string }
+        titleEn: { type: string }
+        flag: { type: string, maxLength: 16 }
+
     TaskInput:
       type: object
       required: [section, prompt, options, correctIndex]
       properties:
+        courseId:
+          type: integer
+          format: int64
+          description: Required when creating a task; ignored on update (a task never changes course).
         section: { $ref: '#/components/schemas/Section' }
         prompt: { type: string }
         passage: { type: string }
@@ -119,8 +172,9 @@ components:
       allOf:
         - $ref: '#/components/schemas/Task'
         - type: object
-          required: [usedIn]
+          required: [courseId, usedIn]
           properties:
+            courseId: { type: integer, format: int64 }
             usedIn:
               type: array
               items: { $ref: '#/components/schemas/ExamRef' }
@@ -142,16 +196,18 @@ components:
       properties:
         allowSignups: { type: boolean }
 
-    Level:
-      type: string
-      enum: [rvp, vnzh, citizenship]
-      description: Which exam the variant prepares for - РВП, ВНЖ or Гражданство.
-
     ExamInput:
       type: object
-      required: [level]
       properties:
-        level: { $ref: '#/components/schemas/Level' }
+        courseId:
+          type: integer
+          format: int64
+          description: Required when creating an exam; ignored on update (an exam never changes course).
+        categoryId:
+          type: integer
+          format: int64
+          nullable: true
+          description: The exam's category, which must belong to the exam's course; null = uncategorized.
         titleRu: { type: string }
         titleEn: { type: string }
         descriptionRu: { type: string }
@@ -174,10 +230,11 @@ components:
 
     Exam:
       type: object
-      required: [id, level, titleRu, titleEn, descriptionRu, descriptionEn, tasksCount, sections, stats]
+      required: [id, courseId, categoryId, titleRu, titleEn, descriptionRu, descriptionEn, tasksCount, sections, stats]
       properties:
         id: { type: integer, format: int64 }
-        level: { $ref: '#/components/schemas/Level' }
+        courseId: { type: integer, format: int64 }
+        categoryId: { type: integer, format: int64, nullable: true }
         titleRu: { type: string }
         titleEn: { type: string }
         descriptionRu: { type: string }
@@ -343,10 +400,29 @@ paths:
               schema: { $ref: '#/components/schemas/Streak' }
         default: { $ref: '#/components/responses/Error' }
 
+  /courses:
+    get:
+      operationId: listCourses
+      description: Public. Every course with how many exams and tasks it holds.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Course' }
+        default: { $ref: '#/components/responses/Error' }
+
   /exams:
     get:
       operationId: listExams
       description: Public. When a bearer token is sent, each exam also carries the caller's personal stats.
+      parameters:
+        - name: courseId
+          in: query
+          description: Only the exams of this course.
+          schema: { type: integer, format: int64 }
       responses:
         '200':
           description: OK
@@ -471,6 +547,107 @@ paths:
               schema: { $ref: '#/components/schemas/Result' }
         default: { $ref: '#/components/responses/Error' }
 
+  /categories:
+    get:
+      operationId: listCategories
+      parameters:
+        - { name: courseId, in: query, required: false, schema: { type: integer, format: int64 } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Category' }
+        default: { $ref: '#/components/responses/Error' }
+
+  /admin/categories:
+    post:
+      operationId: adminCreateCategory
+      security: [{ bearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CategoryInput' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Category' }
+        default: { $ref: '#/components/responses/Error' }
+
+  /admin/categories/{categoryID}:
+    parameters:
+      - $ref: '#/components/parameters/CategoryID'
+    put:
+      operationId: adminUpdateCategory
+      security: [{ bearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CategoryInput' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Category' }
+        default: { $ref: '#/components/responses/Error' }
+    delete:
+      operationId: adminDeleteCategory
+      description: Fails with 409 while the category still has exams.
+      security: [{ bearer: [] }]
+      responses:
+        '204': { description: Deleted }
+        default: { $ref: '#/components/responses/Error' }
+
+  /admin/courses:
+    post:
+      operationId: adminCreateCourse
+      security: [{ bearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CourseInput' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Course' }
+        default: { $ref: '#/components/responses/Error' }
+
+  /admin/courses/{courseID}:
+    parameters:
+      - $ref: '#/components/parameters/CourseID'
+    put:
+      operationId: adminUpdateCourse
+      security: [{ bearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CourseInput' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Course' }
+        default: { $ref: '#/components/responses/Error' }
+    delete:
+      operationId: adminDeleteCourse
+      description: Fails with 409 while the course still has exams or tasks.
+      security: [{ bearer: [] }]
+      responses:
+        '204': { description: Deleted }
+        default: { $ref: '#/components/responses/Error' }
+
   /admin/exams:
     post:
       operationId: adminCreateExam
@@ -533,7 +710,7 @@ paths:
       operationId: adminSetExamTasks
       description: >
         Replaces the exam's task list. The order of taskIds is the order inside the exam, so this one call links,
-        unlinks and reorders. The tasks themselves are not changed or deleted.
+        unlinks and reorders. Every task must belong to the exam's course. The tasks themselves are not changed or deleted.
       security: [{ bearer: [] }]
       requestBody:
         required: true
@@ -559,9 +736,13 @@ paths:
   /admin/tasks:
     get:
       operationId: adminListTasks
-      description: The whole task bank, newest first.
+      description: The task bank, newest first.
       security: [{ bearer: [] }]
       parameters:
+        - name: courseId
+          in: query
+          description: Only the tasks of this course.
+          schema: { type: integer, format: int64 }
         - name: section
           in: query
           schema: { $ref: '#/components/schemas/Section' }
@@ -600,7 +781,8 @@ paths:
       operationId: adminImportTasks
       description: >
         Creates many tasks at once, all or nothing: if any task is invalid, nothing is created and the error names
-        the offending tasks. When examId is given the new tasks are also appended to that exam.
+        the offending tasks. The tasks are created in the course given by courseId. When examId is given the new
+        tasks are also appended to that exam, which must belong to the same course.
       security: [{ bearer: [] }]
       requestBody:
         required: true
@@ -608,8 +790,9 @@ paths:
           application/json:
             schema:
               type: object
-              required: [tasks]
+              required: [courseId, tasks]
               properties:
+                courseId: { type: integer, format: int64 }
                 tasks:
                   type: array
                   minItems: 1
@@ -634,7 +817,7 @@ paths:
       description: >
         Applies one action to several bank tasks at once. delete removes them from the bank and every exam;
         unlink removes them from every exam (they stay in the bank); link appends them to the exam given by examId,
-        skipping those already in it.
+        skipping those already in it. The exam and all tasks must belong to the same course.
       security: [{ bearer: [] }]
       requestBody:
         required: true

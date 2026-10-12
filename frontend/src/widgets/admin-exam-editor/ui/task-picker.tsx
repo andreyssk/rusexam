@@ -10,11 +10,13 @@ import { useBankTasks } from '@/features/manage-tasks'
 
 /** Lists bank tasks that are not yet in the exam, so several can be added at once. */
 export function TaskPicker({
+  courseId,
   excludeIds,
   pending,
   onAdd,
   onClose,
 }: {
+  courseId: number
   excludeIds: Set<number>
   pending: boolean
   onAdd: (ids: number[]) => void
@@ -25,7 +27,7 @@ export function TaskPicker({
   const [search, setSearch] = useState('')
   const q = useDeferredValue(search.trim())
   const [selected, setSelected] = useState<Set<number>>(new Set())
-  const { data, isPending, error } = useBankTasks({ section, q })
+  const { data, isPending, error } = useBankTasks({ courseId, section, q })
 
   const available = (data ?? []).filter((task) => !excludeIds.has(task.id))
   const toggle = (id: number) =>

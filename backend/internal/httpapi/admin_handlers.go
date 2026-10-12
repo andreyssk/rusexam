@@ -1,15 +1,18 @@
 package httpapi
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
+
+	"github.com/jackc/pgx/v5"
 )
 
+const errOtherCourse = "exam and tasks must belong to the same course"
+
 func validateExam(in *ExamInput) string {
-	if !levels[in.Level] {
-		return "unknown level"
-	}
 	in.TitleRu, in.TitleEn = strings.TrimSpace(in.TitleRu), strings.TrimSpace(in.TitleEn)
 	if in.TitleRu == "" && in.TitleEn == "" {
 		return "a title is required (Russian or English)"
@@ -49,14 +52,17 @@ func (s *Server) adminCreateExam(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, msg)
 		return
 	}
+	if !s.requireCourse(w, r, in.CourseID) || !s.requireCategoryIn(w, r, in.CategoryID, in.CourseID) {
+		return
+	}
 	var id int64
 	if err := s.pool.QueryRow(r.Context(),
-		`INSERT INTO exams (level, title_ru, title_en, description_ru, description_en) VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-		in.Level, in.TitleRu, in.TitleEn, in.DescriptionRu, in.DescriptionEn).Scan(&id); err != nil {
+		`INSERT INTO exams (course_id, category_id, title_ru, title_en, description_ru, description_en) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+		in.CourseID, in.CategoryID, in.TitleRu, in.TitleEn, in.DescriptionRu, in.DescriptionEn).Scan(&id); err != nil {
 		fail(w, err)
 		return
 	}
-	exams, err := queryExams(r.Context(), s.pool, 0, &id)
+	exams, err := queryExams(r.Context(), s.pool, 0, &id, nil)
 	if err != nil || len(exams) == 0 {
 		fail(w, err)
 		return
@@ -77,9 +83,20 @@ func (s *Server) adminUpdateExam(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, msg)
 		return
 	}
+	var courseID int64
+	if err := s.pool.QueryRow(r.Context(), `SELECT course_id FROM exams WHERE id = $1`, id).Scan(&courseID); errors.Is(err, pgx.ErrNoRows) {
+		writeError(w, http.StatusNotFound, "exam not found")
+		return
+	} else if err != nil {
+		fail(w, err)
+		return
+	}
+	if !s.requireCategoryIn(w, r, in.CategoryID, courseID) {
+		return
+	}
 	tag, err := s.pool.Exec(r.Context(),
-		`UPDATE exams SET level = $2, title_ru = $3, title_en = $4, description_ru = $5, description_en = $6, updated_at = now()
-		 WHERE id = $1`, id, in.Level, in.TitleRu, in.TitleEn, in.DescriptionRu, in.DescriptionEn)
+		`UPDATE exams SET category_id = $6, title_ru = $2, title_en = $3, description_ru = $4, description_en = $5, updated_at = now()
+		 WHERE id = $1`, id, in.TitleRu, in.TitleEn, in.DescriptionRu, in.DescriptionEn, in.CategoryID)
 	if err != nil {
 		fail(w, err)
 		return
@@ -88,7 +105,7 @@ func (s *Server) adminUpdateExam(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "exam not found")
 		return
 	}
-	exams, err := queryExams(r.Context(), s.pool, 0, &id)
+	exams, err := queryExams(r.Context(), s.pool, 0, &id, nil)
 	if err != nil || len(exams) == 0 {
 		fail(w, err)
 		return
@@ -121,7 +138,16 @@ func (s *Server) adminListBankTasks(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "unknown section")
 		return
 	}
-	tasks, err := adminBankTasks(r.Context(), s.pool, section, strings.TrimSpace(r.URL.Query().Get("q")))
+	var courseID *int64
+	if v := r.URL.Query().Get("courseId"); v != "" {
+		id, err := strconv.ParseInt(v, 10, 64)
+		if err != nil || id <= 0 {
+			writeError(w, http.StatusBadRequest, "invalid courseId")
+			return
+		}
+		courseID = &id
+	}
+	tasks, err := adminBankTasks(r.Context(), s.pool, courseID, section, strings.TrimSpace(r.URL.Query().Get("q")))
 	if err != nil {
 		fail(w, err)
 		return
@@ -138,11 +164,14 @@ func (s *Server) adminCreateTask(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, msg)
 		return
 	}
+	if !s.requireCourse(w, r, in.CourseID) {
+		return
+	}
 	var id int64
 	err := s.pool.QueryRow(r.Context(), `
-		INSERT INTO tasks (section, prompt, passage, options, correct_index, explanation)
-		VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-		in.Section, in.Prompt, in.Passage, in.Options, in.CorrectIndex, in.Explanation).Scan(&id)
+		INSERT INTO tasks (course_id, section, prompt, passage, options, correct_index, explanation)
+		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+		in.CourseID, in.Section, in.Prompt, in.Passage, in.Options, in.CorrectIndex, in.Explanation).Scan(&id)
 	if err != nil {
 		fail(w, err)
 		return
@@ -197,7 +226,7 @@ func (s *Server) adminDeleteTask(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) writeAdminTask(w http.ResponseWriter, r *http.Request, id int64, status int) {
-	rows, err := s.pool.Query(r.Context(), `SELECT `+taskColumns+`, `+usedInColumn+` FROM tasks t WHERE t.id = $1`, id)
+	rows, err := s.pool.Query(r.Context(), `SELECT `+taskColumns+`, t.course_id, `+usedInColumn+` FROM tasks t WHERE t.id = $1`, id)
 	if err != nil {
 		fail(w, err)
 		return
@@ -255,23 +284,28 @@ func (s *Server) adminSetExamTasks(w http.ResponseWriter, r *http.Request) {
 	}
 	defer tx.Rollback(ctx) //nolint:errcheck
 
-	var exists bool
-	if err := tx.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM exams WHERE id = $1)`, examID).Scan(&exists); err != nil {
+	var examCourse int64
+	if err := tx.QueryRow(ctx, `SELECT course_id FROM exams WHERE id = $1`, examID).Scan(&examCourse); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			writeError(w, http.StatusNotFound, "exam not found")
+			return
+		}
 		fail(w, err)
 		return
 	}
-	if !exists {
-		writeError(w, http.StatusNotFound, "exam not found")
-		return
-	}
 	if len(in.TaskIDs) > 0 {
-		var found int
-		if err := tx.QueryRow(ctx, `SELECT count(*) FROM tasks WHERE id = ANY($1)`, in.TaskIDs).Scan(&found); err != nil {
+		var found, inCourse int
+		if err := tx.QueryRow(ctx, `SELECT count(*), count(*) FILTER (WHERE course_id = $2) FROM tasks WHERE id = ANY($1)`,
+			in.TaskIDs, examCourse).Scan(&found, &inCourse); err != nil {
 			fail(w, err)
 			return
 		}
 		if found != len(in.TaskIDs) {
 			writeError(w, http.StatusBadRequest, "some tasks do not exist")
+			return
+		}
+		if inCourse != found {
+			writeError(w, http.StatusBadRequest, errOtherCourse)
 			return
 		}
 	}
@@ -338,13 +372,22 @@ func (s *Server) adminBulkTasks(w http.ResponseWriter, r *http.Request) {
 		}
 		affected = tag.RowsAffected()
 	case "link":
-		var exists bool
-		if err := tx.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM exams WHERE id = $1)`, in.ExamID).Scan(&exists); err != nil {
+		var examCourse int64
+		if err := tx.QueryRow(ctx, `SELECT course_id FROM exams WHERE id = $1`, in.ExamID).Scan(&examCourse); err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				writeError(w, http.StatusNotFound, "exam not found")
+				return
+			}
 			fail(w, err)
 			return
 		}
-		if !exists {
-			writeError(w, http.StatusNotFound, "exam not found")
+		var other int
+		if err := tx.QueryRow(ctx, `SELECT count(*) FROM tasks WHERE id = ANY($1) AND course_id <> $2`, in.TaskIDs, examCourse).Scan(&other); err != nil {
+			fail(w, err)
+			return
+		}
+		if other > 0 {
+			writeError(w, http.StatusBadRequest, errOtherCourse)
 			return
 		}
 		// Append after the current last position, keeping the order of the request.
@@ -376,10 +419,14 @@ const maxImportTasks = 500
 // adminImportTasks creates many tasks in one transaction, optionally appending them to an exam.
 func (s *Server) adminImportTasks(w http.ResponseWriter, r *http.Request) {
 	var in struct {
-		Tasks  []TaskInput `json:"tasks"`
-		ExamID int64       `json:"examId"`
+		CourseID int64       `json:"courseId"`
+		Tasks    []TaskInput `json:"tasks"`
+		ExamID   int64       `json:"examId"`
 	}
 	if !readJSON(w, r, &in) {
+		return
+	}
+	if !s.requireCourse(w, r, in.CourseID) {
 		return
 	}
 	if len(in.Tasks) == 0 {
@@ -415,13 +462,17 @@ func (s *Server) adminImportTasks(w http.ResponseWriter, r *http.Request) {
 
 	next := 0
 	if in.ExamID != 0 {
-		var exists bool
-		if err := tx.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM exams WHERE id = $1)`, in.ExamID).Scan(&exists); err != nil {
+		var examCourse int64
+		if err := tx.QueryRow(ctx, `SELECT course_id FROM exams WHERE id = $1`, in.ExamID).Scan(&examCourse); err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				writeError(w, http.StatusNotFound, "exam not found")
+				return
+			}
 			fail(w, err)
 			return
 		}
-		if !exists {
-			writeError(w, http.StatusNotFound, "exam not found")
+		if examCourse != in.CourseID {
+			writeError(w, http.StatusBadRequest, errOtherCourse)
 			return
 		}
 		if err := tx.QueryRow(ctx, `SELECT COALESCE(max(position), 0) FROM exam_tasks WHERE exam_id = $1`, in.ExamID).Scan(&next); err != nil {
@@ -432,9 +483,9 @@ func (s *Server) adminImportTasks(w http.ResponseWriter, r *http.Request) {
 	for _, t := range in.Tasks {
 		var id int64
 		if err := tx.QueryRow(ctx, `
-			INSERT INTO tasks (section, prompt, passage, options, correct_index, explanation)
-			VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-			t.Section, t.Prompt, t.Passage, t.Options, t.CorrectIndex, t.Explanation).Scan(&id); err != nil {
+			INSERT INTO tasks (course_id, section, prompt, passage, options, correct_index, explanation)
+			VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+			in.CourseID, t.Section, t.Prompt, t.Passage, t.Options, t.CorrectIndex, t.Explanation).Scan(&id); err != nil {
 			fail(w, err)
 			return
 		}

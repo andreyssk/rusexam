@@ -19,10 +19,13 @@ function useExamMutationHelpers() {
   }
 }
 
+type ExamFields = Omit<ExamInput, 'courseId'>
+
+/** Creates an exam in the currently selected course. */
 export function useCreateExam() {
   const h = useExamMutationHelpers()
   return useMutation({
-    mutationFn: (body: ExamInput) => unwrap(api.POST('/admin/exams', { body })),
+    mutationFn: (body: ExamFields & { courseId: number }) => unwrap(api.POST('/admin/exams', { body })),
     onSuccess: () => {
       h.refresh()
       h.ok('toast.examCreated')
@@ -34,7 +37,7 @@ export function useCreateExam() {
 export function useUpdateExam(examId: number) {
   const h = useExamMutationHelpers()
   return useMutation({
-    mutationFn: (body: ExamInput) =>
+    mutationFn: (body: ExamFields) =>
       unwrap(api.PUT('/admin/exams/{examID}', { params: { path: { examID: examId } }, body })),
     onSuccess: () => {
       h.refresh()

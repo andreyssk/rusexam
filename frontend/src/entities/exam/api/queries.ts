@@ -1,12 +1,17 @@
 import { useQuery } from '@tanstack/react-query'
 import { api, unwrap } from '@/shared/api'
+import { useCurrentCourse } from '@/entities/course'
 import { useAuth } from '@/entities/user'
 
+/** The exams of the selected course. */
 export function useExams() {
   const { user } = useAuth()
+  const { course } = useCurrentCourse()
+  const courseId = course?.id
   return useQuery({
-    queryKey: ['exams', user?.id ?? 'anon'],
-    queryFn: () => unwrap(api.GET('/exams')),
+    queryKey: ['exams', user?.id ?? 'anon', courseId],
+    queryFn: () => unwrap(api.GET('/exams', { params: { query: { courseId } } })),
+    enabled: courseId !== undefined,
   })
 }
 

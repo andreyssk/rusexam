@@ -2,8 +2,6 @@ package httpapi
 
 import "time"
 
-var levels = map[string]bool{"rvp": true, "vnzh": true, "citizenship": true}
-
 var sections = map[string]bool{"vocabulary": true, "grammar": true, "reading": true, "history": true, "law": true}
 
 // Task is used for both public and admin views. Answer-revealing fields are
@@ -24,10 +22,11 @@ type ExamRef struct {
 	TitleEn string `json:"titleEn"`
 }
 
-// AdminTask is a task as the admin sees it: with the exams it is linked to.
+// AdminTask is a task as the admin sees it: with its course and the exams it is linked to.
 type AdminTask struct {
 	Task
-	UsedIn []ExamRef `json:"usedIn"`
+	CourseID int64     `json:"courseId"`
+	UsedIn   []ExamRef `json:"usedIn"`
 }
 
 func (t Task) hidden() Task {
@@ -36,7 +35,41 @@ func (t Task) hidden() Task {
 	return t
 }
 
+// Course groups exams and tasks; learners pick one in the header.
+type Course struct {
+	ID         int64  `json:"id"`
+	TitleRu    string `json:"titleRu"`
+	TitleEn    string `json:"titleEn"`
+	Flag       string `json:"flag"`
+	ExamsCount int    `json:"examsCount"`
+	TasksCount int    `json:"tasksCount"`
+}
+
+// Category groups the exams of one course on the home page.
+type Category struct {
+	ID         int64  `json:"id"`
+	CourseID   int64  `json:"courseId"`
+	TitleRu    string `json:"titleRu"`
+	TitleEn    string `json:"titleEn"`
+	ExamsCount int    `json:"examsCount"`
+}
+
+// CategoryInput.CourseID is required when a category is created and ignored on update: a category never changes course.
+type CategoryInput struct {
+	CourseID int64  `json:"courseId"`
+	TitleRu  string `json:"titleRu"`
+	TitleEn  string `json:"titleEn"`
+}
+
+type CourseInput struct {
+	TitleRu string `json:"titleRu"`
+	TitleEn string `json:"titleEn"`
+	Flag    string `json:"flag"`
+}
+
+// TaskInput.CourseID is required when a task is created and ignored on update: a task never changes course.
 type TaskInput struct {
+	CourseID     int64    `json:"courseId"`
 	Section      string   `json:"section"`
 	Prompt       string   `json:"prompt"`
 	Passage      string   `json:"passage"`
@@ -45,8 +78,10 @@ type TaskInput struct {
 	Explanation  string   `json:"explanation"`
 }
 
+// ExamInput.CourseID is required when an exam is created and ignored on update: an exam never changes course.
 type ExamInput struct {
-	Level         string `json:"level"`
+	CourseID      int64  `json:"courseId"`
+	CategoryID    *int64 `json:"categoryId"`
 	TitleRu       string `json:"titleRu"`
 	TitleEn       string `json:"titleEn"`
 	DescriptionRu string `json:"descriptionRu"`
@@ -66,7 +101,8 @@ type MyExamStats struct {
 
 type Exam struct {
 	ID            int64          `json:"id"`
-	Level         string         `json:"level"`
+	CourseID      int64          `json:"courseId"`
+	CategoryID    *int64         `json:"categoryId"`
 	TitleRu       string         `json:"titleRu"`
 	TitleEn       string         `json:"titleEn"`
 	DescriptionRu string         `json:"descriptionRu"`

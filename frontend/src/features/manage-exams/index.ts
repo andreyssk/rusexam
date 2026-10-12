@@ -1,2 +1,2 @@
 export * from './api/mutations'
-export { ExamForm } from './ui/exam-form'
+export { ExamForm, type ExamFields } from './ui/exam-form'

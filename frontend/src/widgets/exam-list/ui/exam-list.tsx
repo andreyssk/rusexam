@@ -1,52 +1,44 @@
-import { useState } from 'react'
-import { LEVELS, type Level } from '@/shared/api'
-import { cn } from '@/shared/lib/cn'
 import { useI18n } from '@/shared/lib/i18n'
 import { ErrorMessage, Loading } from '@/shared/ui/states'
+import { groupExams, useCategories } from '@/entities/category'
+import { CourseGate } from '@/entities/course'
 import { ExamRow, useExams } from '@/entities/exam'
 import { StartAttempt } from '@/features/start-attempt'
 
-export function ExamList() {
-  const { t } = useI18n()
-  const { data, isPending, error } = useExams()
-  const [level, setLevel] = useState<Level | ''>('')
+function Exams({ courseId }: { courseId: number }) {
+  const { t, pick } = useI18n()
+  const exams = useExams()
+  const categories = useCategories(courseId)
 
-  if (isPending) return <Loading />
-  if (error) return <ErrorMessage error={error} />
-  if (data.length === 0) return <p className="py-10 text-center text-muted-foreground">{t('home.empty')}</p>
+  if (exams.isPending || categories.isPending) return <Loading />
+  if (exams.error || categories.error) return <ErrorMessage error={exams.error ?? categories.error} />
+  if (exams.data.length === 0) return <p className="py-10 text-center text-muted-foreground">{t('home.empty')}</p>
 
-  const exams = level ? data.filter((e) => e.level === level) : data
-  const chips: (Level | '')[] = ['', ...LEVELS]
+  const groups = groupExams(categories.data, exams.data)
+  // With no categories at all there is nothing to head the list with.
+  const headed = groups.some((g) => g.category)
 
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label={t('admin.level')}>
-        {chips.map((l) => (
-          <button
-            key={l || 'all'}
-            type="button"
-            role="radio"
-            aria-checked={level === l}
-            translate={l ? 'no' : undefined}
-            onClick={() => setLevel(l)}
-            className={cn(
-              'cursor-pointer rounded-full border-2 px-3 py-1 text-xs font-bold',
-              level === l ? 'border-accent bg-accent-soft text-accent' : 'bg-card text-muted-foreground hover:bg-muted',
-            )}
-          >
-            {l ? t(`level.${l}`) : t('level.all')}
-          </button>
-        ))}
-      </div>
-      {exams.length === 0 ? (
-        <p className="py-10 text-center text-muted-foreground">{t('home.empty')}</p>
-      ) : (
-        <ul className="space-y-2">
-          {exams.map((exam) => (
-            <ExamRow key={exam.id} exam={exam} actions={<StartAttempt compact examId={exam.id} disabled={exam.tasksCount === 0} />} />
-          ))}
-        </ul>
-      )}
+    <div className="space-y-6">
+      {groups.map((g) => (
+        <section key={g.category?.id ?? 'other'} aria-labelledby={`cat-${g.category?.id ?? 'other'}`}>
+          {headed && (
+            <h2 id={`cat-${g.category?.id ?? 'other'}`} className="mb-2 px-1 text-sm font-extrabold uppercase tracking-wide text-muted-foreground">
+              {g.category ? pick(g.category.titleRu, g.category.titleEn) : t('category.uncategorized')}
+            </h2>
+          )}
+          <ul className="space-y-2">
+            {g.exams.map((exam) => (
+              <ExamRow key={exam.id} exam={exam} actions={<StartAttempt compact examId={exam.id} disabled={exam.tasksCount === 0} />} />
+            ))}
+          </ul>
+        </section>
+      ))}
     </div>
   )
+}
+
+/** The exams of the course selected in the header, under their categories. */
+export function ExamList() {
+  return <CourseGate>{(course) => <Exams courseId={course.id} />}</CourseGate>
 }

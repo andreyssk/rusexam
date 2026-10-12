@@ -2,9 +2,12 @@ import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import { isAttemptRunPath } from '@/shared/lib/routes'
 import { cn } from '@/shared/lib/cn'
 import { Loading } from '@/shared/ui/states'
+import { AdminShell } from '@/widgets/admin-shell'
 import { Header } from '@/widgets/header'
 import { useAuth } from '@/entities/user'
 import { AdminPage } from '@/pages/admin'
+import { AdminCategoriesPage } from '@/pages/admin-categories'
+import { AdminCoursesPage } from '@/pages/admin-courses'
 import { AdminTasksPage } from '@/pages/admin-tasks'
 import { AdminUsersPage } from '@/pages/admin-users'
 import { AdminExamPage } from '@/pages/admin-exam'
@@ -59,13 +62,17 @@ export function AppRoutes() {
           <Route path="attempts/:attemptId" element={<AttemptPage />} />
           <Route path="attempts/:attemptId/result" element={<ResultPage />} />
         </Route>
-        <Route element={<RequireAuth role="admin" />}>
+        <Route path="*" element={<NotFoundPage />} />
+      </Route>
+      <Route element={<RequireAuth role="admin" />}>
+        <Route element={<AdminShell />}>
           <Route path="admin" element={<AdminPage />} />
           <Route path="admin/exams/:examId" element={<AdminExamPage />} />
+          <Route path="admin/categories" element={<AdminCategoriesPage />} />
+          <Route path="admin/courses" element={<AdminCoursesPage />} />
           <Route path="admin/tasks" element={<AdminTasksPage />} />
           <Route path="admin/users" element={<AdminUsersPage />} />
         </Route>
-        <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>
   )

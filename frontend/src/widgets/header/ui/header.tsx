@@ -1,10 +1,11 @@
-import { BookOpen, Flame, GraduationCap, History, ListChecks, LogOut, Menu, User as UserIcon, Users, X, type LucideIcon } from 'lucide-react'
+import { BookOpen, Flame, GraduationCap, History, LogOut, Menu, User as UserIcon, X, type LucideIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import { cn } from '@/shared/lib/cn'
 import { useI18n } from '@/shared/lib/i18n'
 import { Button } from '@/shared/ui/button'
 import { Tooltip } from '@/shared/ui/tooltip'
+import { CourseSwitch } from '@/features/switch-course'
 import { LanguageSwitch } from '@/features/switch-language'
 import { ThemeSwitch } from '@/features/switch-theme'
 import { isAttemptRunPath } from '@/shared/lib/routes'
@@ -17,20 +18,12 @@ const link = (isActive: boolean) =>
     isActive ? 'bg-accent-soft text-accent' : 'text-muted-foreground hover:bg-muted',
   )
 
-type NavItem = { to: string; label: string; icon: LucideIcon; end?: boolean; active?: boolean }
+type NavItem = { to: string; label: string; icon: LucideIcon; end?: boolean }
 
-/** Admins manage exams, the task bank and users; learners take exams and review their history. */
+/** Learners take exams and review their history; the admin area has its own sidebar. */
 function useNavItems(): NavItem[] {
   const { t } = useI18n()
   const { user } = useAuth()
-  const { pathname } = useLocation()
-  if (user?.role === 'admin') {
-    return [
-      { to: '/admin', label: t('nav.exams'), icon: BookOpen, active: pathname === '/admin' || pathname.startsWith('/admin/exams') },
-      { to: '/admin/tasks', label: t('nav.tasks'), icon: ListChecks },
-      { to: '/admin/users', label: t('nav.users'), icon: Users },
-    ]
-  }
   return [
     { to: '/', label: t('nav.exams'), icon: BookOpen, end: true },
     ...(user ? [{ to: '/history', label: t('nav.history'), icon: History }] : []),
@@ -39,7 +32,7 @@ function useNavItems(): NavItem[] {
 
 function NavLinks() {
   return useNavItems().map((item) => (
-    <NavLink key={item.to} to={item.to} end={item.end} className={({ isActive }) => link(item.active ?? isActive)}>
+    <NavLink key={item.to} to={item.to} end={item.end} className={({ isActive }) => link(isActive)}>
       {item.label}
     </NavLink>
   ))
@@ -78,7 +71,7 @@ function BottomNav() {
   if (!user || isAttemptRunPath(pathname)) return null
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 flex border-t-2 bg-card pb-[env(safe-area-inset-bottom)] md:hidden">
-      {items.map(({ to, label, icon: Icon, end, active }) => (
+      {items.map(({ to, label, icon: Icon, end }) => (
         <NavLink
           key={to}
           to={to}
@@ -86,7 +79,7 @@ function BottomNav() {
           className={({ isActive }) =>
             cn(
               'flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-extrabold uppercase tracking-wide',
-              (active ?? isActive) ? 'text-accent' : 'text-muted-foreground',
+              isActive ? 'text-accent' : 'text-muted-foreground',
             )
           }
         >
@@ -134,6 +127,8 @@ export function Header() {
         </nav>
         <div className="ml-auto flex items-center gap-2 sm:gap-3">
           <StreakBadge />
+          {/* Not while a session runs: the course is fixed for it. */}
+          {!isAttemptRunPath(location.pathname) && <CourseSwitch />}
           <ThemeSwitch />
           <LanguageSwitch />
           {user ? (

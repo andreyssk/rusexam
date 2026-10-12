@@ -57,7 +57,6 @@ func EnsureAdmin(ctx context.Context, pool *pgxpool.Pool, username, password str
 }
 
 type seedExam struct {
-	Level         string     `json:"level"`
 	TitleRu       string     `json:"titleRu"`
 	TitleEn       string     `json:"titleEn"`
 	DescriptionRu string     `json:"descriptionRu"`
@@ -92,12 +91,17 @@ func SeedSamples(ctx context.Context, pool *pgxpool.Pool) error {
 		return err
 	}
 	defer tx.Rollback(ctx) //nolint:errcheck
+	// The samples go into the first course (the migration creates one).
+	var courseID int64
+	if err := tx.QueryRow(ctx, `SELECT id FROM courses ORDER BY id LIMIT 1`).Scan(&courseID); err != nil {
+		return err
+	}
 	for _, e := range exams {
 		var examID int64
 		err := tx.QueryRow(ctx, `
-			INSERT INTO exams (level, title_ru, title_en, description_ru, description_en)
+			INSERT INTO exams (course_id, title_ru, title_en, description_ru, description_en)
 			VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-			e.Level, e.TitleRu, e.TitleEn, e.DescriptionRu, e.DescriptionEn).Scan(&examID)
+			courseID, e.TitleRu, e.TitleEn, e.DescriptionRu, e.DescriptionEn).Scan(&examID)
 		if err != nil {
 			return err
 		}
@@ -108,9 +112,9 @@ func SeedSamples(ctx context.Context, pool *pgxpool.Pool) error {
 			}
 			var taskID int64
 			err = tx.QueryRow(ctx, `
-				INSERT INTO tasks (section, prompt, passage, options, correct_index, explanation)
-				VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-				t.Section, t.Prompt, t.Passage, opts, t.CorrectIndex, t.Explanation).Scan(&taskID)
+				INSERT INTO tasks (course_id, section, prompt, passage, options, correct_index, explanation)
+				VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+				courseID, t.Section, t.Prompt, t.Passage, opts, t.CorrectIndex, t.Explanation).Scan(&taskID)
 			if err != nil {
 				return err
 			}

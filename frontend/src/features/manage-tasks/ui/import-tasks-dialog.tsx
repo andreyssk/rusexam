@@ -5,6 +5,7 @@ import { useI18n } from '@/shared/lib/i18n'
 import { Button } from '@/shared/ui/button'
 import { Label, Select, Textarea } from '@/shared/ui/input'
 import { ErrorMessage } from '@/shared/ui/states'
+import { useCurrentCourse } from '@/entities/course'
 import { useExams } from '@/entities/exam'
 import { useImportTasks } from '../api/hooks'
 
@@ -40,6 +41,7 @@ export function ImportTasksDialog({ open, onClose }: { open: boolean; onClose: (
   const dialog = useRef<HTMLDialogElement>(null)
   const fileInput = useRef<HTMLInputElement>(null)
   const exams = useExams()
+  const { course } = useCurrentCourse()
   const imp = useImportTasks()
   // The pasted (or file-loaded) text is the single source of truth; parsing is derived from it.
   const [text, setText] = useState('')
@@ -165,7 +167,7 @@ export function ImportTasksDialog({ open, onClose }: { open: boolean; onClose: (
             <Button
               loading={imp.isPending}
               disabled={!tasks || tasks.length === 0}
-              onClick={() => tasks && imp.mutate({ tasks, examId: examId ? Number(examId) : undefined }, { onSuccess: onClose })}
+              onClick={() => tasks && course && imp.mutate({ courseId: course.id, tasks, examId: examId ? Number(examId) : undefined }, { onSuccess: onClose })}
             >
               {t('admin.importRun')}
             </Button>

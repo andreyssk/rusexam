@@ -8,12 +8,13 @@ import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Input, Select } from '@/shared/ui/input'
 import { ErrorMessage, Loading } from '@/shared/ui/states'
+import { CourseGate } from '@/entities/course'
 import { useExams } from '@/entities/exam'
 import { ImportTasksDialog, TaskForm, useBankTasks, useBulkTasks, type BulkAction, useCreateTask, useDeleteTask, useExportTasks, useUpdateTask } from '@/features/manage-tasks'
 
 type Editing = { kind: 'new' } | { kind: 'edit'; task: AdminTask } | null
 
-export function AdminTaskBank() {
+function TaskBank({ courseId }: { courseId: number }) {
   const { t, pick } = useI18n()
   const confirm = useConfirm()
   const [section, setSection] = useState<Section | ''>('')
@@ -21,7 +22,7 @@ export function AdminTaskBank() {
   const q = useDeferredValue(search.trim())
   const [editing, setEditing] = useState<Editing>(null)
   const [importing, setImporting] = useState(false)
-  const { data, isPending, error } = useBankTasks({ section, q })
+  const { data, isPending, error } = useBankTasks({ courseId, section, q })
   const create = useCreateTask()
   const update = useUpdateTask()
   const del = useDeleteTask()
@@ -52,7 +53,7 @@ export function AdminTaskBank() {
             <Button variant="outline" onClick={() => setImporting(true)}>
               <Upload size={16} /> {t('admin.import')}
             </Button>
-            <Button variant="outline" loading={exportTasks.isPending} onClick={() => exportTasks.mutate()}>
+            <Button variant="outline" loading={exportTasks.isPending} onClick={() => exportTasks.mutate(courseId)}>
               <Download size={16} /> {t('admin.export')}
             </Button>
             <Button onClick={() => setEditing({ kind: 'new' })}>
@@ -80,7 +81,7 @@ export function AdminTaskBank() {
               onCancel={close}
               onSubmit={(body) =>
                 editing.kind === 'new'
-                  ? create.mutate(body, { onSuccess: close })
+                  ? create.mutate({ ...body, courseId }, { onSuccess: close })
                   : update.mutate({ id: editing.task.id, body }, { onSuccess: close })
               }
             />
@@ -207,4 +208,9 @@ export function AdminTaskBank() {
       )}
     </div>
   )
+}
+
+/** The task bank of the course selected in the sidebar. */
+export function AdminTaskBank() {
+  return <CourseGate>{(course) => <TaskBank courseId={course.id} />}</CourseGate>
 }

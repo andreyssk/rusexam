@@ -3,6 +3,7 @@ package httpapi
 import (
 	"context"
 	"net/http"
+	"strconv"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -12,7 +13,7 @@ type querier interface {
 }
 
 const examsQuery = `
-SELECT e.id, e.level, e.title_ru, e.title_en, e.description_ru, e.description_en,
+SELECT e.id, e.course_id, e.category_id, e.title_ru, e.title_en, e.description_ru, e.description_en,
        (SELECT count(*) FROM exam_tasks et WHERE et.exam_id = e.id)::int,
        (SELECT COALESCE(jsonb_object_agg(section, c), '{}'::jsonb)
           FROM (SELECT t.section, count(*)::int AS c FROM exam_tasks et JOIN tasks t ON t.id = et.task_id
@@ -30,11 +31,13 @@ LEFT JOIN (
     FROM attempts WHERE status = 'completed' AND user_id = $1 GROUP BY exam_id
 ) u ON u.exam_id = e.id
 WHERE ($2::bigint IS NULL OR e.id = $2)
+  AND ($3::bigint IS NULL OR e.course_id = $3)
 ORDER BY e.id`
 
 // queryExams returns exams with global stats; personal stats are filled when userID > 0.
-func queryExams(ctx context.Context, q querier, userID int64, examID *int64) ([]Exam, error) {
-	rows, err := q.Query(ctx, examsQuery, userID, examID)
+// examID and courseID optionally narrow the result.
+func queryExams(ctx context.Context, q querier, userID int64, examID, courseID *int64) ([]Exam, error) {
+	rows, err := q.Query(ctx, examsQuery, userID, examID, courseID)
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +48,7 @@ func queryExams(ctx context.Context, q querier, userID int64, examID *int64) ([]
 			e  Exam
 			my MyExamStats
 		)
-		if err := rows.Scan(&e.ID, &e.Level, &e.TitleRu, &e.TitleEn, &e.DescriptionRu, &e.DescriptionEn,
+		if err := rows.Scan(&e.ID, &e.CourseID, &e.CategoryID, &e.TitleRu, &e.TitleEn, &e.DescriptionRu, &e.DescriptionEn,
 			&e.TasksCount, &e.Sections, &e.Stats.AttemptsCount, &e.Stats.AvgScore,
 			&my.AttemptsCount, &my.BestScore, &my.LastScore); err != nil {
 			return nil, err
@@ -60,7 +63,16 @@ func queryExams(ctx context.Context, q querier, userID int64, examID *int64) ([]
 
 func (s *Server) listExams(w http.ResponseWriter, r *http.Request) {
 	c, _ := claims(r)
-	exams, err := queryExams(r.Context(), s.pool, c.UserID, nil)
+	var courseID *int64
+	if v := r.URL.Query().Get("courseId"); v != "" {
+		id, err := strconv.ParseInt(v, 10, 64)
+		if err != nil || id <= 0 {
+			writeError(w, http.StatusBadRequest, "invalid courseId")
+			return
+		}
+		courseID = &id
+	}
+	exams, err := queryExams(r.Context(), s.pool, c.UserID, nil, courseID)
 	if err != nil {
 		fail(w, err)
 		return
@@ -74,7 +86,7 @@ func (s *Server) getExam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	c, _ := claims(r)
-	exams, err := queryExams(r.Context(), s.pool, c.UserID, &id)
+	exams, err := queryExams(r.Context(), s.pool, c.UserID, &id, nil)
 	if err != nil {
 		fail(w, err)
 		return
@@ -124,26 +136,30 @@ func scanAdminTasks(rows pgx.Rows) ([]AdminTask, error) {
 	defer rows.Close()
 	out := []AdminTask{}
 	for rows.Next() {
-		var used []ExamRef
-		t, err := scanTask(rows, &used)
+		var (
+			used     []ExamRef
+			courseID int64
+		)
+		t, err := scanTask(rows, &courseID, &used)
 		if err != nil {
 			return nil, err
 		}
 		if used == nil {
 			used = []ExamRef{}
 		}
-		out = append(out, AdminTask{Task: t, UsedIn: used})
+		out = append(out, AdminTask{Task: t, CourseID: courseID, UsedIn: used})
 	}
 	return out, rows.Err()
 }
 
-// adminBankTasks lists the whole task bank, optionally filtered by section and a text search.
-func adminBankTasks(ctx context.Context, q querier, section, search string) ([]AdminTask, error) {
-	rows, err := q.Query(ctx, `SELECT `+taskColumns+`, `+usedInColumn+`
+// adminBankTasks lists the task bank, optionally filtered by course, section and a text search.
+func adminBankTasks(ctx context.Context, q querier, courseID *int64, section, search string) ([]AdminTask, error) {
+	rows, err := q.Query(ctx, `SELECT `+taskColumns+`, t.course_id, `+usedInColumn+`
 		FROM tasks t
-		WHERE ($1 = '' OR t.section = $1)
+		WHERE ($3::bigint IS NULL OR t.course_id = $3)
+		  AND ($1 = '' OR t.section = $1)
 		  AND ($2 = '' OR t.prompt ILIKE '%' || $2 || '%')
-		ORDER BY t.id DESC`, section, search)
+		ORDER BY t.id DESC`, section, search, courseID)
 	if err != nil {
 		return nil, err
 	}
@@ -151,7 +167,7 @@ func adminBankTasks(ctx context.Context, q querier, section, search string) ([]A
 }
 
 func adminExamTasks(ctx context.Context, q querier, examID int64) ([]AdminTask, error) {
-	rows, err := q.Query(ctx, `SELECT `+taskColumns+`, `+usedInColumn+`
+	rows, err := q.Query(ctx, `SELECT `+taskColumns+`, t.course_id, `+usedInColumn+`
 		FROM exam_tasks et JOIN tasks t ON t.id = et.task_id
 		WHERE et.exam_id = $1 ORDER BY et.position, t.id`, examID)
 	if err != nil {

@@ -86,6 +86,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/courses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Public. Every course with how many exams and tasks it holds. */
+        get: operations["listCourses"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/exams": {
         parameters: {
             query?: never;
@@ -213,6 +230,92 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listCategories"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["adminCreateCategory"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/categories/{categoryID}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                categoryID: components["parameters"]["CategoryID"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["adminUpdateCategory"];
+        post?: never;
+        /** @description Fails with 409 while the category still has exams. */
+        delete: operations["adminDeleteCategory"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/courses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["adminCreateCourse"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/courses/{courseID}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                courseID: components["parameters"]["CourseID"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["adminUpdateCourse"];
+        post?: never;
+        /** @description Fails with 409 while the course still has exams or tasks. */
+        delete: operations["adminDeleteCourse"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/exams": {
         parameters: {
             query?: never;
@@ -258,7 +361,7 @@ export interface paths {
         };
         /** @description The exam's tasks in order, including answers. */
         get: operations["adminListExamTasks"];
-        /** @description Replaces the exam's task list. The order of taskIds is the order inside the exam, so this one call links, unlinks and reorders. The tasks themselves are not changed or deleted. */
+        /** @description Replaces the exam's task list. The order of taskIds is the order inside the exam, so this one call links, unlinks and reorders. Every task must belong to the exam's course. The tasks themselves are not changed or deleted. */
         put: operations["adminSetExamTasks"];
         post?: never;
         delete?: never;
@@ -274,7 +377,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description The whole task bank, newest first. */
+        /** @description The task bank, newest first. */
         get: operations["adminListTasks"];
         put?: never;
         /** @description Creates a task in the bank. Link it to exams with PUT /admin/exams/{examID}/tasks. */
@@ -294,7 +397,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Creates many tasks at once, all or nothing: if any task is invalid, nothing is created and the error names the offending tasks. When examId is given the new tasks are also appended to that exam. */
+        /** @description Creates many tasks at once, all or nothing: if any task is invalid, nothing is created and the error names the offending tasks. The tasks are created in the course given by courseId. When examId is given the new tasks are also appended to that exam, which must belong to the same course. */
         post: operations["adminImportTasks"];
         delete?: never;
         options?: never;
@@ -311,7 +414,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Applies one action to several bank tasks at once. delete removes them from the bank and every exam; unlink removes them from every exam (they stay in the bank); link appends them to the exam given by examId, skipping those already in it. */
+        /** @description Applies one action to several bank tasks at once. delete removes them from the bank and every exam; unlink removes them from every exam (they stay in the bank); link appends them to the exam given by examId, skipping those already in it. The exam and all tasks must belong to the same course. */
         post: operations["adminBulkTasks"];
         delete?: never;
         options?: never;
@@ -465,7 +568,45 @@ export interface components {
             correctIndex?: number;
             explanation?: string;
         };
+        Course: {
+            /** Format: int64 */
+            id: number;
+            titleRu: string;
+            titleEn: string;
+            /** @description An emoji shown in the header course switcher */
+            flag: string;
+            examsCount: number;
+            tasksCount: number;
+        };
+        Category: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            courseId: number;
+            titleRu: string;
+            titleEn: string;
+            examsCount: number;
+        };
+        CategoryInput: {
+            /**
+             * Format: int64
+             * @description Required when creating a category; ignored on update (a category never changes course).
+             */
+            courseId?: number;
+            titleRu?: string;
+            titleEn?: string;
+        };
+        CourseInput: {
+            titleRu?: string;
+            titleEn?: string;
+            flag: string;
+        };
         TaskInput: {
+            /**
+             * Format: int64
+             * @description Required when creating a task; ignored on update (a task never changes course).
+             */
+            courseId?: number;
             section: components["schemas"]["Section"];
             prompt: string;
             passage?: string;
@@ -481,6 +622,8 @@ export interface components {
         };
         /** @description A task together with the exams it is linked to. Tasks live in a bank and can be used by any number of exams. */
         AdminTask: components["schemas"]["Task"] & {
+            /** Format: int64 */
+            courseId: number;
             usedIn: components["schemas"]["ExamRef"][];
         };
         AdminUser: {
@@ -497,13 +640,17 @@ export interface components {
         Settings: {
             allowSignups: boolean;
         };
-        /**
-         * @description Which exam the variant prepares for - РВП, ВНЖ or Гражданство.
-         * @enum {string}
-         */
-        Level: "rvp" | "vnzh" | "citizenship";
         ExamInput: {
-            level: components["schemas"]["Level"];
+            /**
+             * Format: int64
+             * @description Required when creating an exam; ignored on update (an exam never changes course).
+             */
+            courseId?: number;
+            /**
+             * Format: int64
+             * @description The exam's category, which must belong to the exam's course; null = uncategorized.
+             */
+            categoryId?: number | null;
             titleRu?: string;
             titleEn?: string;
             descriptionRu?: string;
@@ -527,7 +674,10 @@ export interface components {
         Exam: {
             /** Format: int64 */
             id: number;
-            level: components["schemas"]["Level"];
+            /** Format: int64 */
+            courseId: number;
+            /** Format: int64 */
+            categoryId: number | null;
             titleRu: string;
             titleEn: string;
             descriptionRu: string;
@@ -608,6 +758,8 @@ export interface components {
     parameters: {
         ExamID: number;
         AttemptID: number;
+        CourseID: number;
+        CategoryID: number;
         TaskID: number;
     };
     requestBodies: never;
@@ -732,9 +884,33 @@ export interface operations {
             default: components["responses"]["Error"];
         };
     };
-    listExams: {
+    listCourses: {
         parameters: {
             query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Course"][];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    listExams: {
+        parameters: {
+            query?: {
+                /** @description Only the exams of this course. */
+                courseId?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -910,6 +1086,175 @@ export interface operations {
             default: components["responses"]["Error"];
         };
     };
+    listCategories: {
+        parameters: {
+            query?: {
+                courseId?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Category"][];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    adminCreateCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CategoryInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Category"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    adminUpdateCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                categoryID: components["parameters"]["CategoryID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CategoryInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Category"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    adminDeleteCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                categoryID: components["parameters"]["CategoryID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    adminCreateCourse: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CourseInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Course"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    adminUpdateCourse: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                courseID: components["parameters"]["CourseID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CourseInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Course"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    adminDeleteCourse: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                courseID: components["parameters"]["CourseID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["Error"];
+        };
+    };
     adminCreateExam: {
         parameters: {
             query?: never;
@@ -1038,6 +1383,8 @@ export interface operations {
     adminListTasks: {
         parameters: {
             query?: {
+                /** @description Only the tasks of this course. */
+                courseId?: number;
                 section?: components["schemas"]["Section"];
                 /** @description Case-insensitive search in the question text. */
                 q?: string;
@@ -1095,6 +1442,8 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
+                    /** Format: int64 */
+                    courseId: number;
                     tasks: components["schemas"]["TaskInput"][];
                     /** Format: int64 */
                     examId?: number;

@@ -42,6 +42,8 @@ func New(pool *pgxpool.Pool, tokens *auth.Tokens, cookieSecure bool) http.Handle
 		r.Post("/auth/refresh", s.refresh)
 		r.Post("/auth/logout", s.logout)
 
+		r.Get("/courses", s.listCourses)
+		r.Get("/categories", s.listCategories)
 		r.With(s.optionalAuth).Get("/exams", s.listExams)
 		r.With(s.optionalAuth).Get("/exams/{examID}", s.getExam)
 
@@ -66,6 +68,14 @@ func New(pool *pgxpool.Pool, tokens *auth.Tokens, cookieSecure bool) http.Handle
 
 		r.Route("/admin", func(r chi.Router) {
 			r.Use(s.requireAuth, s.requireAdmin)
+			r.Post("/courses", s.adminCreateCourse)
+			r.Put("/courses/{courseID}", s.adminUpdateCourse)
+			r.Delete("/courses/{courseID}", s.adminDeleteCourse)
+
+			r.Post("/categories", s.adminCreateCategory)
+			r.Put("/categories/{categoryID}", s.adminUpdateCategory)
+			r.Delete("/categories/{categoryID}", s.adminDeleteCategory)
+
 			r.Post("/exams", s.adminCreateExam)
 			r.Put("/exams/{examID}", s.adminUpdateExam)
 			r.Delete("/exams/{examID}", s.adminDeleteExam)

@@ -6,14 +6,14 @@ import { useToast } from '@/shared/ui/toast'
 
 // ---- reads ----
 
-/** The whole task bank, optionally filtered. */
-export function useBankTasks(filters: { section: Section | ''; q: string }) {
+/** The task bank of one course, optionally filtered. */
+export function useBankTasks(filters: { courseId: number; section: Section | ''; q: string }) {
   return useQuery({
-    queryKey: ['admin-bank', filters.section, filters.q],
+    queryKey: ['admin-bank', filters.courseId, filters.section, filters.q],
     queryFn: () =>
       unwrap(
         api.GET('/admin/tasks', {
-          params: { query: { section: filters.section || undefined, q: filters.q || undefined } },
+          params: { query: { courseId: filters.courseId, section: filters.section || undefined, q: filters.q || undefined } },
         }),
       ),
     placeholderData: (prev) => prev,
@@ -29,7 +29,7 @@ export function useExamTasks(examId: number) {
 
 // ---- writes ----
 
-const createTask = (body: TaskInput) => unwrap(api.POST('/admin/tasks', { body }))
+const createTask = (body: TaskInput & { courseId: number }) => unwrap(api.POST('/admin/tasks', { body }))
 const setExamTasks = (examId: number, taskIds: number[]) =>
   unwrap(api.PUT('/admin/exams/{examID}/tasks', { params: { path: { examID: examId } }, body: { taskIds } }))
 
@@ -66,7 +66,7 @@ export function useCreateTask() {
 export function useCreateAndLinkTask(examId: number) {
   const h = useWriteHelpers()
   return useMutation({
-    mutationFn: async ({ body, currentIds }: { body: TaskInput; currentIds: number[] }) => {
+    mutationFn: async ({ body, currentIds }: { body: TaskInput & { courseId: number }; currentIds: number[] }) => {
       const task = await createTask(body)
       await setExamTasks(examId, [...currentIds, task.id])
       return task
@@ -145,7 +145,7 @@ export function useImportTasks() {
   const toast = useToast()
   const { t } = useI18n()
   return useMutation({
-    mutationFn: (v: { tasks: TaskInput[]; examId?: number }) => unwrap(api.POST('/admin/tasks/import', { body: v })),
+    mutationFn: (v: { courseId: number; tasks: TaskInput[]; examId?: number }) => unwrap(api.POST('/admin/tasks/import', { body: v })),
     onSuccess: (r) => {
       h.refresh()
       toast.success(t('toast.tasksImported', { n: r.created }))
@@ -154,14 +154,14 @@ export function useImportTasks() {
   })
 }
 
-/** Downloads every task in the bank (ignoring filters) as a JSON file that the import dialog accepts. */
+/** Downloads every task of the course (ignoring filters) as a JSON file that the import dialog accepts. */
 export function useExportTasks() {
   const toast = useToast()
   const { t } = useI18n()
   const errorText = useErrorText()
   return useMutation({
-    mutationFn: async () => {
-      const all = await unwrap(api.GET('/admin/tasks', { params: { query: {} } }))
+    mutationFn: async (courseId: number) => {
+      const all = await unwrap(api.GET('/admin/tasks', { params: { query: { courseId } } }))
       const tasks: TaskInput[] = all.map((x) => ({
         section: x.section,
         prompt: x.prompt,

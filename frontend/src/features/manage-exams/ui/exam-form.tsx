@@ -1,27 +1,34 @@
 import { useState, type FormEvent } from 'react'
-import { LEVELS, type ExamInput, type Level } from '@/shared/api'
+import type { ExamInput } from '@/shared/api'
 import { useI18n } from '@/shared/lib/i18n'
 import { Button } from '@/shared/ui/button'
 import { Input, Label, Select, Textarea } from '@/shared/ui/input'
+import { useCategories } from '@/entities/category'
+
+/** The course is fixed when an exam is created, so the form does not edit it. */
+export type ExamFields = Omit<ExamInput, 'courseId'>
 
 type Props = {
-  initial?: ExamInput
+  /** Whose categories can be picked. */
+  courseId: number
+  initial?: ExamFields
   submitLabel: string
   pending?: boolean
-  onSubmit: (v: ExamInput) => void
+  onSubmit: (v: ExamFields) => void
   onCancel?: () => void
 }
 
-export function ExamForm({ initial, submitLabel, pending, onSubmit, onCancel }: Props) {
-  const { t } = useI18n()
-  const [v, setV] = useState<Required<ExamInput>>({
-    level: initial?.level ?? 'rvp',
+export function ExamForm({ courseId, initial, submitLabel, pending, onSubmit, onCancel }: Props) {
+  const { t, pick } = useI18n()
+  const categories = useCategories(courseId)
+  const [v, setV] = useState<Required<ExamFields>>({
+    categoryId: initial?.categoryId ?? null,
     titleRu: initial?.titleRu ?? '',
     titleEn: initial?.titleEn ?? '',
     descriptionRu: initial?.descriptionRu ?? '',
     descriptionEn: initial?.descriptionEn ?? '',
   })
-  const set = (k: Exclude<keyof ExamInput, 'level'>) => (e: { target: { value: string } }) => setV((p) => ({ ...p, [k]: e.target.value }))
+  const set = (k: Exclude<keyof ExamFields, 'categoryId'>) => (e: { target: { value: string } }) => setV((p) => ({ ...p, [k]: e.target.value }))
 
   const submit = (e: FormEvent) => {
     e.preventDefault()
@@ -30,12 +37,18 @@ export function ExamForm({ initial, submitLabel, pending, onSubmit, onCancel }: 
 
   return (
     <form onSubmit={submit} className="space-y-4">
-      <div className="max-w-xs">
-        <Label htmlFor="level">{t('admin.level')}</Label>
-        <Select id="level" translate="no" value={v.level} onChange={(e) => setV((p) => ({ ...p, level: e.target.value as Level }))}>
-          {LEVELS.map((l) => (
-            <option key={l} value={l}>
-              {t(`level.${l}`)}
+      <div>
+        <Label htmlFor="examCategory">{t('category.label')}</Label>
+        <Select
+          id="examCategory"
+          className="sm:max-w-sm"
+          value={v.categoryId ?? ''}
+          onChange={(e) => setV((p) => ({ ...p, categoryId: e.target.value ? Number(e.target.value) : null }))}
+        >
+          <option value="">{t('category.none')}</option>
+          {categories.data?.map((c) => (
+            <option key={c.id} value={c.id}>
+              {pick(c.titleRu, c.titleEn)}
             </option>
           ))}
         </Select>
