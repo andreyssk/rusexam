@@ -1,4 +1,4 @@
-import { BookOpen, Flame, GraduationCap, History, LogOut, Menu, Sparkles, User as UserIcon, X, type LucideIcon } from 'lucide-react'
+import { BookOpen, Flame, GraduationCap, History, LogOut, Menu, User as UserIcon, X, type LucideIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import { cn } from '@/shared/lib/cn'
@@ -9,7 +9,6 @@ import { CourseSwitch } from '@/features/switch-course'
 import { LanguageSwitch } from '@/features/switch-language'
 import { ThemeSwitch } from '@/features/switch-theme'
 import { isAttemptRunPath } from '@/shared/lib/routes'
-import { streakUpdate } from '@/shared/lib/streak-update'
 import { useStreak } from '@/entities/attempt'
 import { useAuth } from '@/entities/user'
 
@@ -59,19 +58,6 @@ function StreakBadge() {
         <Flame size={20} fill={data.doneToday ? 'currentColor' : 'none'} />
         {data.current}
       </span>
-    </Tooltip>
-  )
-}
-
-/** TEMPORARY: plays the end-of-lesson streak animation, as if today's first lesson had just been finished. */
-function TestStreakButton() {
-  const { t } = useI18n()
-  const { data } = useStreak()
-  return (
-    <Tooltip label={t('streak.test')}>
-      <Button variant="ghost" size="icon" aria-label={t('streak.test')} onClick={() => streakUpdate.show(data?.current ?? 0, (data?.current ?? 0) + 1)}>
-        <Sparkles size={18} />
-      </Button>
     </Tooltip>
   )
 }
@@ -141,8 +127,6 @@ export function Header() {
         </nav>
         <div className="ml-auto flex items-center gap-2 sm:gap-3">
           <StreakBadge />
-          {/* TEMPORARY: previews the streak animation; remove once it is approved. */}
-          {user && <TestStreakButton />}
           {/* Not while a session runs: the course is fixed for it. */}
           {!isAttemptRunPath(location.pathname) && <CourseSwitch />}
           <ThemeSwitch />
