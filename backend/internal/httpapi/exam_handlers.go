@@ -129,6 +129,9 @@ func loadTasks(ctx context.Context, q querier, examID int64) ([]Task, error) {
 	return tasks, rows.Err()
 }
 
+// adminTaskColumns adds what only admins get to see: the course, the exams using the task, and the external ID.
+var adminTaskColumns = taskColumns + `, t.course_id, ` + usedInColumn + `, t.external_id`
+
 const usedInColumn = `COALESCE((SELECT jsonb_agg(jsonb_build_object('id', e.id, 'titleRu', e.title_ru, 'titleEn', e.title_en) ORDER BY e.id)
 	FROM exam_tasks x JOIN exams e ON e.id = x.exam_id WHERE x.task_id = t.id), '[]'::jsonb)`
 
@@ -140,24 +143,25 @@ func scanAdminTasks(rows pgx.Rows) ([]AdminTask, error) {
 			used     []ExamRef
 			courseID int64
 		)
-		t, err := scanTask(rows, &courseID, &used)
+		var ext *string
+		t, err := scanTask(rows, &courseID, &used, &ext)
 		if err != nil {
 			return nil, err
 		}
 		if used == nil {
 			used = []ExamRef{}
 		}
-		out = append(out, AdminTask{Task: t, CourseID: courseID, UsedIn: used})
+		out = append(out, AdminTask{Task: t, CourseID: courseID, UsedIn: used, ExternalID: ext})
 	}
 	return out, rows.Err()
 }
 
 // adminBankTasks lists the task bank, optionally filtered by course, a text search and "not in any exam".
 func adminBankTasks(ctx context.Context, q querier, courseID *int64, search string, unassigned bool) ([]AdminTask, error) {
-	rows, err := q.Query(ctx, `SELECT `+taskColumns+`, t.course_id, `+usedInColumn+`
+	rows, err := q.Query(ctx, `SELECT `+adminTaskColumns+`
 		FROM tasks t
 		WHERE ($2::bigint IS NULL OR t.course_id = $2)
-		  AND ($1 = '' OR t.prompt ILIKE '%' || $1 || '%')
+		  AND ($1 = '' OR t.prompt ILIKE '%' || $1 || '%' OR t.external_id ILIKE '%' || $1 || '%')
 		  AND (NOT $3 OR NOT EXISTS (SELECT 1 FROM exam_tasks et WHERE et.task_id = t.id))
 		ORDER BY t.id DESC`, search, courseID, unassigned)
 	if err != nil {
@@ -167,7 +171,7 @@ func adminBankTasks(ctx context.Context, q querier, courseID *int64, search stri
 }
 
 func adminExamTasks(ctx context.Context, q querier, examID int64) ([]AdminTask, error) {
-	rows, err := q.Query(ctx, `SELECT `+taskColumns+`, t.course_id, `+usedInColumn+`
+	rows, err := q.Query(ctx, `SELECT `+adminTaskColumns+`
 		FROM exam_tasks et JOIN tasks t ON t.id = et.task_id
 		WHERE et.exam_id = $1 ORDER BY et.position, t.id`, examID)
 	if err != nil {

@@ -6,11 +6,14 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/jackc/pgx/v5"
 )
 
 const errOtherCourse = "exam and tasks must belong to the same course"
+
+const errDuplicateTaskID = "a task with this external ID already exists"
 
 func validateExam(in *ExamInput) string {
 	in.TitleRu, in.TitleEn = strings.TrimSpace(in.TitleRu), strings.TrimSpace(in.TitleEn)
@@ -21,6 +24,16 @@ func validateExam(in *ExamInput) string {
 }
 
 func validateTask(in *TaskInput) string {
+	if in.ExternalID != nil {
+		v := strings.TrimSpace(*in.ExternalID)
+		if v == "" {
+			in.ExternalID = nil
+		} else if utf8.RuneCountInString(v) > 100 {
+			return "the external ID is too long (max 100 characters)"
+		} else {
+			in.ExternalID = &v
+		}
+	}
 	in.Prompt, in.Passage, in.Explanation = strings.TrimSpace(in.Prompt), strings.TrimSpace(in.Passage), strings.TrimSpace(in.Explanation)
 	if in.Prompt == "" {
 		return "a prompt is required"
@@ -197,9 +210,13 @@ func (s *Server) adminCreateTask(w http.ResponseWriter, r *http.Request) {
 	}
 	var id int64
 	err := s.pool.QueryRow(r.Context(), `
-		INSERT INTO tasks (course_id, prompt, passage, options, correct_index, explanation, audio_asset_id, audio_autoplay)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
-		in.CourseID, in.Prompt, in.Passage, in.Options, in.CorrectIndex, in.Explanation, in.AudioAssetID, autoplayOrDefault(in.AudioAutoplay)).Scan(&id)
+		INSERT INTO tasks (course_id, prompt, passage, options, correct_index, explanation, audio_asset_id, audio_autoplay, external_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
+		in.CourseID, in.Prompt, in.Passage, in.Options, in.CorrectIndex, in.Explanation, in.AudioAssetID, autoplayOrDefault(in.AudioAutoplay), in.ExternalID).Scan(&id)
+	if isUniqueViolation(err) {
+		writeError(w, http.StatusConflict, errDuplicateTaskID)
+		return
+	}
 	if err != nil {
 		fail(w, err)
 		return
@@ -225,9 +242,13 @@ func (s *Server) adminUpdateTask(w http.ResponseWriter, r *http.Request) {
 	}
 	tag, err := s.pool.Exec(r.Context(), `
 		UPDATE tasks SET prompt = $2, passage = $3, options = $4, correct_index = $5, explanation = $6,
-		       audio_asset_id = $7, audio_autoplay = $8
+		       audio_asset_id = $7, audio_autoplay = $8, external_id = $9
 		WHERE id = $1`,
-		id, in.Prompt, in.Passage, in.Options, in.CorrectIndex, in.Explanation, in.AudioAssetID, autoplayOrDefault(in.AudioAutoplay))
+		id, in.Prompt, in.Passage, in.Options, in.CorrectIndex, in.Explanation, in.AudioAssetID, autoplayOrDefault(in.AudioAutoplay), in.ExternalID)
+	if isUniqueViolation(err) {
+		writeError(w, http.StatusConflict, errDuplicateTaskID)
+		return
+	}
 	if err != nil {
 		fail(w, err)
 		return
@@ -258,7 +279,7 @@ func (s *Server) adminDeleteTask(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) writeAdminTask(w http.ResponseWriter, r *http.Request, id int64, status int) {
-	rows, err := s.pool.Query(r.Context(), `SELECT `+taskColumns+`, t.course_id, `+usedInColumn+` FROM tasks t WHERE t.id = $1`, id)
+	rows, err := s.pool.Query(r.Context(), `SELECT `+adminTaskColumns+` FROM tasks t WHERE t.id = $1`, id)
 	if err != nil {
 		fail(w, err)
 		return
@@ -515,9 +536,13 @@ func (s *Server) adminImportTasks(w http.ResponseWriter, r *http.Request) {
 	for _, t := range in.Tasks {
 		var id int64
 		if err := tx.QueryRow(ctx, `
-			INSERT INTO tasks (course_id, prompt, passage, options, correct_index, explanation)
-			VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-			in.CourseID, t.Prompt, t.Passage, t.Options, t.CorrectIndex, t.Explanation).Scan(&id); err != nil {
+			INSERT INTO tasks (course_id, prompt, passage, options, correct_index, explanation, external_id)
+			VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+			in.CourseID, t.Prompt, t.Passage, t.Options, t.CorrectIndex, t.Explanation, t.ExternalID).Scan(&id); err != nil {
+			if isUniqueViolation(err) {
+				writeError(w, http.StatusConflict, errDuplicateTaskID)
+				return
+			}
 			fail(w, err)
 			return
 		}

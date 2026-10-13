@@ -62,6 +62,11 @@ export function TaskPicker({
                   <span lang="ru" translate="no" className="min-w-0 flex-1 truncate text-sm">
                     {task.prompt}
                   </span>
+                  {task.externalId && (
+                    <span translate="no" className="shrink-0 text-xs font-bold text-accent">
+                      {task.externalId}
+                    </span>
+                  )}
                   {task.usedIn.length > 0 && <span className="shrink-0 text-xs text-muted-foreground">{t('admin.sharedIn', { n: task.usedIn.length })}</span>}
                 </label>
               </li>

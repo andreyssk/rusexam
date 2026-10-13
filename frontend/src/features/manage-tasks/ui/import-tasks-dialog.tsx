@@ -16,6 +16,7 @@ const EXAMPLE: TaskInput[] = [
     options: ['Москва', 'Москвы', 'Москве', 'Москвой'],
     correctIndex: 2,
     explanation: 'После «в» на вопрос «где?» нужен предложный падеж: в Москве.',
+    externalId: 'EXT-0001',
   },
   {
     prompt: 'Кто первым полетел в космос?',
@@ -23,6 +24,7 @@ const EXAMPLE: TaskInput[] = [
     options: ['Юрий Гагарин', 'Герман Титов', 'Алексей Леонов'],
     correctIndex: 0,
     explanation: '',
+    externalId: 'EXT-0002',
   },
 ]
 

@@ -746,6 +746,8 @@ export interface components {
             audioAssetId?: number | null;
             /** @description Defaults to true when omitted. */
             audioAutoplay?: boolean;
+            /** @description The task's ID in another system; optional */
+            externalId?: string | null;
             prompt: string;
             passage?: string;
             options: string[];
@@ -762,6 +764,8 @@ export interface components {
         AdminTask: components["schemas"]["Task"] & {
             /** Format: int64 */
             courseId: number;
+            /** @description The task's ID in another system. Admin-only; unique when set. */
+            externalId: string | null;
             usedIn: components["schemas"]["ExamRef"][];
         };
         AdminUser: {

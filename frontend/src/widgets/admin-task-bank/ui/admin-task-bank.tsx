@@ -172,6 +172,11 @@ function TaskBank({ courseId }: { courseId: number }) {
                       {task.prompt}
                     </p>
                     <p className="truncate text-xs text-muted-foreground">
+                      {task.externalId && (
+                        <span translate="no" className="font-bold text-accent">
+                          {task.externalId} ·{' '}
+                        </span>
+                      )}
                       {task.usedIn.length === 0 ? t('admin.notUsed') : t('admin.usedIn', { names: task.usedIn.map(examName).join(', ') })}
                     </p>
                   </div>

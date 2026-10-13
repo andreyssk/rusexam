@@ -28,6 +28,8 @@ type AdminTask struct {
 	Task
 	CourseID int64     `json:"courseId"`
 	UsedIn   []ExamRef `json:"usedIn"`
+	// ExternalID is only ever sent to admins (this type is only used by admin endpoints).
+	ExternalID *string `json:"externalId"`
 }
 
 func (t Task) hidden() Task {
@@ -79,6 +81,8 @@ type TaskInput struct {
 	// AudioAssetID is optional; AudioAutoplay defaults to true when omitted.
 	AudioAssetID  *int64 `json:"audioAssetId"`
 	AudioAutoplay *bool  `json:"audioAutoplay"`
+	// ExternalID is the task's ID in another system; optional, unique when set.
+	ExternalID *string `json:"externalId"`
 }
 
 // ExamInput.CourseID is required when an exam is created and ignored on update: an exam never changes course.

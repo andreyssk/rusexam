@@ -173,6 +173,7 @@ export function useExportTasks() {
         options: x.options,
         correctIndex: x.correctIndex ?? 0,
         explanation: x.explanation ?? '',
+        ...(x.externalId ? { externalId: x.externalId } : {}),
       }))
       const url = URL.createObjectURL(new Blob([JSON.stringify(tasks, null, 2)], { type: 'application/json' }))
       const a = document.createElement('a')

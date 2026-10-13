@@ -1,7 +1,7 @@
 import { Plus, Trash2 } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import type { Task, TaskInput } from '@/shared/api'
+import type { AdminTask, TaskInput } from '@/shared/api'
 import { useI18n } from '@/shared/lib/i18n'
 import { Button } from '@/shared/ui/button'
 import { Input, Label, Select, Textarea } from '@/shared/ui/input'
@@ -10,7 +10,7 @@ import { useAssets } from '@/entities/asset'
 import { TaskAudio } from '@/entities/task'
 
 type Props = {
-  initial?: Task
+  initial?: AdminTask
   pending?: boolean
   onSubmit: (v: TaskInput) => void
   onCancel: () => void
@@ -25,6 +25,7 @@ export function TaskForm({ initial, pending, onSubmit, onCancel }: Props) {
   const [options, setOptions] = useState<string[]>(initial ? [...initial.options] : emptyOptions())
   const [correct, setCorrect] = useState(initial?.correctIndex ?? 0)
   const [explanation, setExplanation] = useState(initial?.explanation ?? '')
+  const [externalId, setExternalId] = useState(initial?.externalId ?? '')
   // The audio is an asset from the library, shared with any other task that uses it.
   const [audioAssetId, setAudioAssetId] = useState<number | null>(initial?.audioAssetId ?? null)
   const [autoplay, setAutoplay] = useState(initial?.audioAutoplay ?? true)
@@ -39,7 +40,7 @@ export function TaskForm({ initial, pending, onSubmit, onCancel }: Props) {
 
   const submit = (e: FormEvent) => {
     e.preventDefault()
-    onSubmit({ prompt, passage, options, correctIndex: correct, explanation, audioAssetId, audioAutoplay: autoplay })
+    onSubmit({ prompt, passage, options, correctIndex: correct, explanation, audioAssetId, audioAutoplay: autoplay, externalId })
   }
 
   return (
@@ -128,6 +129,12 @@ export function TaskForm({ initial, pending, onSubmit, onCancel }: Props) {
             <Switch checked={autoplay} onChange={setAutoplay} label={t('admin.autoplay')} hint={t('admin.autoplayHint')} />
           </>
         )}
+      </div>
+
+      <div className="max-w-sm">
+        <Label htmlFor="externalId">{t('admin.externalId')}</Label>
+        <Input id="externalId" translate="no" value={externalId} onChange={(e) => setExternalId(e.target.value)} />
+        <p className="mt-1 text-xs text-muted-foreground">{t('admin.externalIdHint')}</p>
       </div>
 
       <div>

@@ -207,6 +207,11 @@ export function AdminExamEditor({ examId }: { examId: number }) {
                   <p lang="ru" translate="no" className="min-w-0 flex-1 basis-48 truncate text-sm" title={task.prompt}>
                     {task.prompt}
                   </p>
+                  {task.externalId && (
+                    <Badge className="bg-accent-soft text-accent" translate="no">
+                      {task.externalId}
+                    </Badge>
+                  )}
                   {task.usedIn.length > 1 && <Badge className="bg-accent-soft text-accent">{t('admin.sharedIn', { n: task.usedIn.length })}</Badge>}
                   <div className="flex items-center gap-1">
                     <Button variant="ghost" size="icon" aria-label={t('admin.moveUp')} title={t('admin.moveUp')} disabled={i === 0 || setTasks.isPending} onClick={() => move(i, -1)}>
