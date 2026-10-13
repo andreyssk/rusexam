@@ -16,6 +16,15 @@ type Props = {
 
 const LETTERS = 'ABCDEFGH'
 
+/** Long questions get a smaller, calmer type so they stay readable without taking over the screen. */
+function promptClass(prompt: string) {
+  const n = prompt.length
+  if (n <= 70) return 'text-2xl font-extrabold leading-snug'
+  if (n <= 140) return 'text-xl font-extrabold leading-snug'
+  if (n <= 220) return 'text-lg font-bold leading-normal'
+  return 'text-base font-bold leading-normal'
+}
+
 export function TaskView({ task, selectedIndex, correctIndex, disabled, onSelect, order }: Props) {
   const revealed = correctIndex !== undefined
 
@@ -44,7 +53,7 @@ export function TaskView({ task, selectedIndex, correctIndex, disabled, onSelect
       )}
 
       <div>
-        <h2 lang="ru" translate="no" className="text-2xl font-extrabold leading-snug">{task.prompt}</h2>
+        <h2 lang="ru" translate="no" className={promptClass(task.prompt)}>{task.prompt}</h2>
       </div>
 
       <ul className="space-y-2" role="radiogroup">

@@ -4,6 +4,8 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { api, unwrap, type Mode } from '@/shared/api'
 import { useI18n } from '@/shared/lib/i18n'
 import { Button } from '@/shared/ui/button'
+import { Spinner } from '@/shared/ui/spinner'
+import { LoadingSplash } from '@/shared/ui/splash'
 import { ErrorMessage } from '@/shared/ui/states'
 import { useAuth } from '@/entities/user'
 
@@ -50,12 +52,14 @@ export function StartAttempt({ lessonId, disabled }: { lessonId: number; disable
         size="icon"
         className="size-11"
         disabled={user ? disabled || start.isPending : false}
-        loading={start.isPending}
         onClick={() => (user ? start.mutate('training') : navigate('/login', { state: { from: location.pathname } }))}
         aria-label={label}
       >
-        <Play size={20} fill="currentColor" />
+        {/* While starting: the spinner replaces the play icon on desktop; phones show the splash screen instead. */}
+        <Play size={20} fill="currentColor" className={start.isPending ? 'md:hidden' : undefined} />
+        {start.isPending && <Spinner size={20} className="max-md:hidden" />}
       </Button>
+      {start.isPending && <LoadingSplash className="md:hidden" />}
       {start.isError && <ErrorMessage error={start.error} />}
     </div>
   )
