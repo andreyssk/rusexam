@@ -1,4 +1,4 @@
-import { BookOpen, Flame, GraduationCap, History, LogOut, Menu, User as UserIcon, X, type LucideIcon } from 'lucide-react'
+import { BookOpen, ClipboardCheck, Flame, GraduationCap, History, LogOut, Menu, User as UserIcon, X, type LucideIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import { cn } from '@/shared/lib/cn'
@@ -20,12 +20,13 @@ const link = (isActive: boolean) =>
 
 type NavItem = { to: string; label: string; icon: LucideIcon; end?: boolean }
 
-/** Learners take exams and review their history; the admin area has its own sidebar. */
+/** Learners take lessons and review their history; the admin area has its own sidebar. */
 function useNavItems(): NavItem[] {
   const { t } = useI18n()
   const { user } = useAuth()
   return [
-    { to: '/', label: t('nav.exams'), icon: BookOpen, end: true },
+    { to: '/', label: t('nav.lessons'), icon: BookOpen, end: true },
+    { to: '/exams', label: t('nav.exams'), icon: ClipboardCheck },
     ...(user ? [{ to: '/history', label: t('nav.history'), icon: History }] : []),
   ]
 }
@@ -67,7 +68,7 @@ function BottomNav() {
   const { user } = useAuth()
   const items = useNavItems()
   const { pathname } = useLocation()
-  // A single tab is pointless (visitors only have the exam list), and a running session has its own action bar.
+  // A single tab is pointless (visitors only have the lesson list), and a running session has its own action bar.
   if (!user || isAttemptRunPath(pathname)) return null
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 flex border-t-2 bg-card pb-[env(safe-area-inset-bottom)] md:hidden">

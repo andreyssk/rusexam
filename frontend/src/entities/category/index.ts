@@ -1,2 +1,2 @@
 export { useCategories } from './api/queries'
-export { groupExams, type ExamGroup } from './model/group-exams'
+export { groupLessons, type LessonGroup } from './model/group-lessons'

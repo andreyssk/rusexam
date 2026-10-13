@@ -12,8 +12,8 @@ import (
 
 const categoriesQuery = `
 SELECT c.id, c.course_id, c.title_ru, c.title_en,
-       (SELECT count(*) FROM exams e WHERE e.category_id = c.id)::int
-FROM exam_categories c
+       (SELECT count(*) FROM lessons e WHERE e.category_id = c.id)::int
+FROM lesson_categories c
 WHERE ($1::bigint IS NULL OR c.id = $1)
   AND ($2::bigint IS NULL OR c.course_id = $2)
 ORDER BY c.id`
@@ -27,7 +27,7 @@ func (s *Server) queryCategories(r *http.Request, id, courseID *int64) ([]Catego
 	out := []Category{}
 	for rows.Next() {
 		var c Category
-		if err := rows.Scan(&c.ID, &c.CourseID, &c.TitleRu, &c.TitleEn, &c.ExamsCount); err != nil {
+		if err := rows.Scan(&c.ID, &c.CourseID, &c.TitleRu, &c.TitleEn, &c.LessonsCount); err != nil {
 			return nil, err
 		}
 		out = append(out, c)
@@ -49,7 +49,7 @@ func (s *Server) requireCategoryIn(w http.ResponseWriter, r *http.Request, categ
 		return true
 	}
 	var catCourse int64
-	err := s.pool.QueryRow(r.Context(), `SELECT course_id FROM exam_categories WHERE id = $1`, *categoryID).Scan(&catCourse)
+	err := s.pool.QueryRow(r.Context(), `SELECT course_id FROM lesson_categories WHERE id = $1`, *categoryID).Scan(&catCourse)
 	if errors.Is(err, pgx.ErrNoRows) {
 		writeError(w, http.StatusBadRequest, "category not found")
 		return false
@@ -106,7 +106,7 @@ func (s *Server) adminCreateCategory(w http.ResponseWriter, r *http.Request) {
 	}
 	var id int64
 	if err := s.pool.QueryRow(r.Context(),
-		`INSERT INTO exam_categories (course_id, title_ru, title_en) VALUES ($1, $2, $3) RETURNING id`,
+		`INSERT INTO lesson_categories (course_id, title_ru, title_en) VALUES ($1, $2, $3) RETURNING id`,
 		in.CourseID, in.TitleRu, in.TitleEn).Scan(&id); err != nil {
 		fail(w, err)
 		return
@@ -128,7 +128,7 @@ func (s *Server) adminUpdateCategory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	tag, err := s.pool.Exec(r.Context(),
-		`UPDATE exam_categories SET title_ru = $2, title_en = $3 WHERE id = $1`, id, in.TitleRu, in.TitleEn)
+		`UPDATE lesson_categories SET title_ru = $2, title_en = $3 WHERE id = $1`, id, in.TitleRu, in.TitleEn)
 	if err != nil {
 		fail(w, err)
 		return
@@ -140,16 +140,16 @@ func (s *Server) adminUpdateCategory(w http.ResponseWriter, r *http.Request) {
 	s.writeCategory(w, r, id, http.StatusOK)
 }
 
-// adminDeleteCategory refuses to delete a category that still has exams, so exams are never silently reshuffled.
+// adminDeleteCategory refuses to delete a category that still has lessons, so lessons are never silently reshuffled.
 func (s *Server) adminDeleteCategory(w http.ResponseWriter, r *http.Request) {
 	id, ok := pathID(w, r, "categoryID")
 	if !ok {
 		return
 	}
-	tag, err := s.pool.Exec(r.Context(), `DELETE FROM exam_categories WHERE id = $1`, id)
+	tag, err := s.pool.Exec(r.Context(), `DELETE FROM lesson_categories WHERE id = $1`, id)
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) && pgErr.Code == "23503" {
-		writeError(w, http.StatusConflict, "the category still has exams; move or delete them first")
+		writeError(w, http.StatusConflict, "the category still has lessons; move or delete them first")
 		return
 	}
 	if err != nil {

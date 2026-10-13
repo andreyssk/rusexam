@@ -128,7 +128,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Public. Every course with how many exams and tasks it holds. */
+        /** @description Public. Every course with how many lessons and tasks it holds. */
         get: operations["listCourses"];
         put?: never;
         post?: never;
@@ -138,15 +138,15 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/exams": {
+    "/lessons": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** @description Public. When a bearer token is sent, each exam also carries the caller's personal stats. */
-        get: operations["listExams"];
+        /** @description Public. When a bearer token is sent, each lesson also carries the caller's personal stats. */
+        get: operations["listLessons"];
         put?: never;
         post?: never;
         delete?: never;
@@ -155,16 +155,16 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/exams/{examID}": {
+    "/lessons/{lessonID}": {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                examID: components["parameters"]["ExamID"];
+                lessonID: components["parameters"]["LessonID"];
             };
             cookie?: never;
         };
-        get: operations["getExam"];
+        get: operations["getLesson"];
         put?: never;
         post?: never;
         delete?: never;
@@ -173,12 +173,12 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/exams/{examID}/attempts": {
+    "/lessons/{lessonID}/attempts": {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                examID: components["parameters"]["ExamID"];
+                lessonID: components["parameters"]["LessonID"];
             };
             cookie?: never;
         };
@@ -309,7 +309,7 @@ export interface paths {
         get?: never;
         put: operations["adminUpdateCategory"];
         post?: never;
-        /** @description Fails with 409 while the category still has exams. */
+        /** @description Fails with 409 while the category still has lessons. */
         delete: operations["adminDeleteCategory"];
         options?: never;
         head?: never;
@@ -344,14 +344,14 @@ export interface paths {
         get?: never;
         put: operations["adminUpdateCourse"];
         post?: never;
-        /** @description Fails with 409 while the course still has exams or tasks. */
+        /** @description Fails with 409 while the course still has lessons or tasks. */
         delete: operations["adminDeleteCourse"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/admin/exams": {
+    "/admin/lessons": {
         parameters: {
             query?: never;
             header?: never;
@@ -360,43 +360,43 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["adminCreateExam"];
+        post: operations["adminCreateLesson"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/admin/exams/{examID}": {
+    "/admin/lessons/{lessonID}": {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                examID: components["parameters"]["ExamID"];
+                lessonID: components["parameters"]["LessonID"];
             };
             cookie?: never;
         };
         get?: never;
-        put: operations["adminUpdateExam"];
+        put: operations["adminUpdateLesson"];
         post?: never;
-        delete: operations["adminDeleteExam"];
+        delete: operations["adminDeleteLesson"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/admin/exams/{examID}/status": {
+    "/admin/lessons/{lessonID}/status": {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                examID: components["parameters"]["ExamID"];
+                lessonID: components["parameters"]["LessonID"];
             };
             cookie?: never;
         };
         get?: never;
-        /** @description Approves an exam (making it available to learners) or sends it back to pending. */
-        put: operations["adminSetExamStatus"];
+        /** @description Approves a lesson (making it available to learners) or sends it back to pending. */
+        put: operations["adminSetLessonStatus"];
         post?: never;
         delete?: never;
         options?: never;
@@ -404,19 +404,19 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/admin/exams/{examID}/tasks": {
+    "/admin/lessons/{lessonID}/tasks": {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                examID: components["parameters"]["ExamID"];
+                lessonID: components["parameters"]["LessonID"];
             };
             cookie?: never;
         };
-        /** @description The exam's tasks in order, including answers. */
-        get: operations["adminListExamTasks"];
-        /** @description Replaces the exam's task list. The order of taskIds is the order inside the exam, so this one call links, unlinks and reorders. Every task must belong to the exam's course. The tasks themselves are not changed or deleted. */
-        put: operations["adminSetExamTasks"];
+        /** @description The lesson's tasks in order, including answers. */
+        get: operations["adminListLessonTasks"];
+        /** @description Replaces the lesson's task list. The order of taskIds is the order inside the lesson, so this one call links, unlinks and reorders. Every task must belong to the lesson's course. The tasks themselves are not changed or deleted. */
+        put: operations["adminSetLessonTasks"];
         post?: never;
         delete?: never;
         options?: never;
@@ -434,7 +434,7 @@ export interface paths {
         /** @description The task bank, newest first. */
         get: operations["adminListTasks"];
         put?: never;
-        /** @description Creates a task in the bank. Link it to exams with PUT /admin/exams/{examID}/tasks. */
+        /** @description Creates a task in the bank. Link it to lessons with PUT /admin/lessons/{lessonID}/tasks. */
         post: operations["adminCreateTask"];
         delete?: never;
         options?: never;
@@ -451,7 +451,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Creates many tasks at once, all or nothing: if any task is invalid, nothing is created and the error names the offending tasks. The tasks are created in the course given by courseId. When examId is given the new tasks are also appended to that exam, which must belong to the same course. */
+        /** @description Creates many tasks at once, all or nothing: if any task is invalid, nothing is created and the error names the offending tasks. The tasks are created in the course given by courseId. When lessonId is given the new tasks are also appended to that lesson, which must belong to the same course. */
         post: operations["adminImportTasks"];
         delete?: never;
         options?: never;
@@ -468,7 +468,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Applies one action to several bank tasks at once. delete removes them from the bank and every exam; unlink removes them from every exam (they stay in the bank); link appends them to the exam given by examId, skipping those already in it. The exam and all tasks must belong to the same course. */
+        /** @description Applies one action to several bank tasks at once. delete removes them from the bank and every lesson; unlink removes them from every lesson (they stay in the bank); link appends them to the lesson given by lessonId, skipping those already in it. The lesson and all tasks must belong to the same course. */
         post: operations["adminBulkTasks"];
         delete?: never;
         options?: never;
@@ -524,7 +524,7 @@ export interface paths {
         /** @description Edits the task everywhere it is used. */
         put: operations["adminUpdateTask"];
         post?: never;
-        /** @description Deletes the task from the bank and from every exam that uses it. */
+        /** @description Deletes the task from the bank and from every lesson that uses it. */
         delete: operations["adminDeleteTask"];
         options?: never;
         head?: never;
@@ -670,6 +670,8 @@ export interface components {
              * @description Playback rate of task audio; 1 is normal.
              */
             audioSpeed: number;
+            /** @description Lesson categories folded on the home page; 0 is the group of lessons without a category. */
+            collapsedCategories: number[];
         };
         /** @description A stored file (audio or image) that tasks can use. */
         Asset: {
@@ -707,7 +709,7 @@ export interface components {
             titleEn: string;
             /** @description An emoji shown in the header course switcher */
             flag: string;
-            examsCount: number;
+            lessonsCount: number;
             tasksCount: number;
         };
         Category: {
@@ -717,7 +719,7 @@ export interface components {
             courseId: number;
             titleRu: string;
             titleEn: string;
-            examsCount: number;
+            lessonsCount: number;
         };
         CategoryInput: {
             /**
@@ -754,19 +756,19 @@ export interface components {
             correctIndex: number;
             explanation?: string;
         };
-        ExamRef: {
+        LessonRef: {
             /** Format: int64 */
             id: number;
             titleRu: string;
             titleEn: string;
         };
-        /** @description A task together with the exams it is linked to. Tasks live in a bank and can be used by any number of exams. */
+        /** @description A task together with the lessons it is linked to. Tasks live in a bank and can be used by any number of lessons. */
         AdminTask: components["schemas"]["Task"] & {
             /** Format: int64 */
             courseId: number;
             /** @description The task's ID in another system. Admin-only; unique when set. */
             externalId: string | null;
-            usedIn: components["schemas"]["ExamRef"][];
+            usedIn: components["schemas"]["LessonRef"][];
         };
         AdminUser: {
             /** Format: int64 */
@@ -782,15 +784,15 @@ export interface components {
         Settings: {
             allowSignups: boolean;
         };
-        ExamInput: {
+        LessonInput: {
             /**
              * Format: int64
-             * @description Required when creating an exam; ignored on update (an exam never changes course).
+             * @description Required when creating a lesson; ignored on update (a lesson never changes course).
              */
             courseId?: number;
             /**
              * Format: int64
-             * @description The exam's category, which must belong to the exam's course; null = uncategorized.
+             * @description The lesson's category, which must belong to the lesson's course; null = uncategorized.
              */
             categoryId?: number | null;
             /** @description Sessions keep the task order instead of shuffling it. */
@@ -800,7 +802,7 @@ export interface components {
             descriptionRu?: string;
             descriptionEn?: string;
         };
-        ExamStats: {
+        LessonStats: {
             attemptsCount: number;
             /**
              * Format: double
@@ -808,7 +810,7 @@ export interface components {
              */
             avgScore: number | null;
         };
-        MyExamStats: {
+        MyLessonStats: {
             attemptsCount: number;
             /** Format: double */
             bestScore: number | null;
@@ -816,34 +818,34 @@ export interface components {
             lastScore: number | null;
         };
         /**
-         * @description New exams are pending until an admin approves them; learners only see approved exams.
+         * @description New lessons are pending until an admin approves them; learners only see approved lessons.
          * @enum {string}
          */
-        ExamStatus: "pending" | "approved";
-        Exam: {
+        LessonStatus: "pending" | "approved";
+        Lesson: {
             /** Format: int64 */
             id: number;
             /** Format: int64 */
             courseId: number;
             /** Format: int64 */
             categoryId: number | null;
-            status: components["schemas"]["ExamStatus"];
+            status: components["schemas"]["LessonStatus"];
             preserveOrder: boolean;
             titleRu: string;
             titleEn: string;
             descriptionRu: string;
             descriptionEn: string;
             tasksCount: number;
-            stats: components["schemas"]["ExamStats"];
-            myStats?: components["schemas"]["MyExamStats"];
+            stats: components["schemas"]["LessonStats"];
+            myStats?: components["schemas"]["MyLessonStats"];
         };
         Attempt: {
             /** Format: int64 */
             id: number;
             /** Format: int64 */
-            examId: number;
-            examTitleRu: string;
-            examTitleEn: string;
+            lessonId: number;
+            lessonTitleRu: string;
+            lessonTitleEn: string;
             mode: components["schemas"]["Mode"];
             /** @enum {string} */
             status: "in_progress" | "completed";
@@ -856,7 +858,7 @@ export interface components {
             totalCount?: number | null;
             /** Format: double */
             scorePercent?: number | null;
-            /** @description The exam's setting: the session must not shuffle its tasks. */
+            /** @description The lesson's setting: the session must not shuffle its tasks. */
             preserveOrder: boolean;
         };
         Streak: {
@@ -900,7 +902,7 @@ export interface components {
         };
     };
     parameters: {
-        ExamID: number;
+        LessonID: number;
         AttemptID: number;
         CourseID: number;
         CategoryID: number;
@@ -1119,10 +1121,10 @@ export interface operations {
             default: components["responses"]["Error"];
         };
     };
-    listExams: {
+    listLessons: {
         parameters: {
             query?: {
-                /** @description Only the exams of this course. */
+                /** @description Only the lessons of this course. */
                 courseId?: number;
             };
             header?: never;
@@ -1137,18 +1139,18 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Exam"][];
+                    "application/json": components["schemas"]["Lesson"][];
                 };
             };
             default: components["responses"]["Error"];
         };
     };
-    getExam: {
+    getLesson: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                examID: components["parameters"]["ExamID"];
+                lessonID: components["parameters"]["LessonID"];
             };
             cookie?: never;
         };
@@ -1160,7 +1162,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Exam"];
+                    "application/json": components["schemas"]["Lesson"];
                 };
             };
             default: components["responses"]["Error"];
@@ -1171,7 +1173,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                examID: components["parameters"]["ExamID"];
+                lessonID: components["parameters"]["LessonID"];
             };
             cookie?: never;
         };
@@ -1469,7 +1471,7 @@ export interface operations {
             default: components["responses"]["Error"];
         };
     };
-    adminCreateExam: {
+    adminCreateLesson: {
         parameters: {
             query?: never;
             header?: never;
@@ -1478,7 +1480,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ExamInput"];
+                "application/json": components["schemas"]["LessonInput"];
             };
         };
         responses: {
@@ -1488,24 +1490,24 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Exam"];
+                    "application/json": components["schemas"]["Lesson"];
                 };
             };
             default: components["responses"]["Error"];
         };
     };
-    adminUpdateExam: {
+    adminUpdateLesson: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                examID: components["parameters"]["ExamID"];
+                lessonID: components["parameters"]["LessonID"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ExamInput"];
+                "application/json": components["schemas"]["LessonInput"];
             };
         };
         responses: {
@@ -1515,18 +1517,18 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Exam"];
+                    "application/json": components["schemas"]["Lesson"];
                 };
             };
             default: components["responses"]["Error"];
         };
     };
-    adminDeleteExam: {
+    adminDeleteLesson: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                examID: components["parameters"]["ExamID"];
+                lessonID: components["parameters"]["LessonID"];
             };
             cookie?: never;
         };
@@ -1542,19 +1544,19 @@ export interface operations {
             default: components["responses"]["Error"];
         };
     };
-    adminSetExamStatus: {
+    adminSetLessonStatus: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                examID: components["parameters"]["ExamID"];
+                lessonID: components["parameters"]["LessonID"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
                 "application/json": {
-                    status: components["schemas"]["ExamStatus"];
+                    status: components["schemas"]["LessonStatus"];
                 };
             };
         };
@@ -1565,18 +1567,18 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Exam"];
+                    "application/json": components["schemas"]["Lesson"];
                 };
             };
             default: components["responses"]["Error"];
         };
     };
-    adminListExamTasks: {
+    adminListLessonTasks: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                examID: components["parameters"]["ExamID"];
+                lessonID: components["parameters"]["LessonID"];
             };
             cookie?: never;
         };
@@ -1594,12 +1596,12 @@ export interface operations {
             default: components["responses"]["Error"];
         };
     };
-    adminSetExamTasks: {
+    adminSetLessonTasks: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                examID: components["parameters"]["ExamID"];
+                lessonID: components["parameters"]["LessonID"];
             };
             cookie?: never;
         };
@@ -1628,7 +1630,7 @@ export interface operations {
             query?: {
                 /** @description Only the tasks of this course. */
                 courseId?: number;
-                /** @description When true, only tasks that are not in any exam. */
+                /** @description When true, only tasks that are not in any lesson. */
                 unassigned?: boolean;
                 /** @description Case-insensitive search in the question text. */
                 q?: string;
@@ -1690,7 +1692,7 @@ export interface operations {
                     courseId: number;
                     tasks: components["schemas"]["TaskInput"][];
                     /** Format: int64 */
-                    examId?: number;
+                    lessonId?: number;
                 };
             };
         };
@@ -1726,7 +1728,7 @@ export interface operations {
                      * Format: int64
                      * @description Required for link.
                      */
-                    examId?: number;
+                    lessonId?: number;
                 };
             };
         };

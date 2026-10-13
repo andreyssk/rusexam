@@ -12,8 +12,9 @@ import { AdminCategoriesPage } from '@/pages/admin-categories'
 import { AdminCoursesPage } from '@/pages/admin-courses'
 import { AdminTasksPage } from '@/pages/admin-tasks'
 import { AdminUsersPage } from '@/pages/admin-users'
-import { AdminExamPage } from '@/pages/admin-exam'
+import { AdminLessonPage } from '@/pages/admin-lesson'
 import { AttemptPage } from '@/pages/attempt'
+import { ExamsPage } from '@/pages/exams'
 import { HistoryPage } from '@/pages/history'
 import { HomePage } from '@/pages/home'
 import { LoginPage } from '@/pages/login'
@@ -35,7 +36,7 @@ function Layout() {
   )
 }
 
-/** Gate for a role. Learners take exams; admins manage content and users, so each is sent to their own area. */
+/** Gate for a role. Learners take lessons; admins manage content and users, so each is sent to their own area. */
 function RequireAuth({ role }: { role: 'learner' | 'admin' }) {
   const { user, isLoading } = useAuth()
   const location = useLocation()
@@ -46,7 +47,7 @@ function RequireAuth({ role }: { role: 'learner' | 'admin' }) {
   return <Outlet />
 }
 
-/** The learners' home; admins have no exams to take, so they land in the admin area. */
+/** The learners' home; admins have no lessons to take, so they land in the admin area. */
 function Home() {
   const { user, isLoading } = useAuth()
   if (isLoading) return <Loading />
@@ -60,6 +61,7 @@ export function AppRoutes() {
       <Route element={<Layout />}>
         <Route index element={<Home />} />
         <Route path="login" element={<LoginPage />} />
+        <Route path="exams" element={<ExamsPage />} />
         <Route element={<RequireAuth role="learner" />}>
           <Route path="history" element={<HistoryPage />} />
           <Route path="attempts/:attemptId" element={<AttemptPage />} />
@@ -70,7 +72,7 @@ export function AppRoutes() {
       <Route element={<RequireAuth role="admin" />}>
         <Route element={<AdminShell />}>
           <Route path="admin" element={<AdminPage />} />
-          <Route path="admin/exams/:examId" element={<AdminExamPage />} />
+          <Route path="admin/lessons/:lessonId" element={<AdminLessonPage />} />
           <Route path="admin/assets" element={<AdminAssetsPage />} />
           <Route path="admin/categories" element={<AdminCategoriesPage />} />
           <Route path="admin/courses" element={<AdminCoursesPage />} />

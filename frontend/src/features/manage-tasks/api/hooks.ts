@@ -20,18 +20,18 @@ export function useBankTasks(filters: { courseId: number; q: string; unassigned?
   })
 }
 
-export function useExamTasks(examId: number) {
+export function useLessonTasks(lessonId: number) {
   return useQuery({
-    queryKey: ['admin-exam-tasks', examId],
-    queryFn: () => unwrap(api.GET('/admin/exams/{examID}/tasks', { params: { path: { examID: examId } } })),
+    queryKey: ['admin-lesson-tasks', lessonId],
+    queryFn: () => unwrap(api.GET('/admin/lessons/{lessonID}/tasks', { params: { path: { lessonID: lessonId } } })),
   })
 }
 
 // ---- writes ----
 
 const createTask = (body: TaskInput & { courseId: number }) => unwrap(api.POST('/admin/tasks', { body }))
-const setExamTasks = (examId: number, taskIds: number[]) =>
-  unwrap(api.PUT('/admin/exams/{examID}/tasks', { params: { path: { examID: examId } }, body: { taskIds } }))
+const setLessonTasks = (lessonId: number, taskIds: number[]) =>
+  unwrap(api.PUT('/admin/lessons/{lessonID}/tasks', { params: { path: { lessonID: lessonId } }, body: { taskIds } }))
 
 function useWriteHelpers() {
   const qc = useQueryClient()
@@ -41,9 +41,9 @@ function useWriteHelpers() {
   return {
     refresh: () => {
       void qc.invalidateQueries({ queryKey: ['admin-bank'] })
-      void qc.invalidateQueries({ queryKey: ['admin-exam-tasks'] })
-      void qc.invalidateQueries({ queryKey: ['exams'] })
-      void qc.invalidateQueries({ queryKey: ['exam'] })
+      void qc.invalidateQueries({ queryKey: ['admin-lesson-tasks'] })
+      void qc.invalidateQueries({ queryKey: ['lessons'] })
+      void qc.invalidateQueries({ queryKey: ['lesson'] })
     },
     ok: (key: TKey) => toast.success(t(key)),
     fail: (e: unknown) => toast.error(errorText(e)),
@@ -62,13 +62,13 @@ export function useCreateTask() {
   })
 }
 
-/** Creates a task in the bank and appends it to the exam in one go. */
-export function useCreateAndLinkTask(examId: number) {
+/** Creates a task in the bank and appends it to the lesson in one go. */
+export function useCreateAndLinkTask(lessonId: number) {
   const h = useWriteHelpers()
   return useMutation({
     mutationFn: async ({ body, currentIds }: { body: TaskInput & { courseId: number }; currentIds: number[] }) => {
       const task = await createTask(body)
-      await setExamTasks(examId, [...currentIds, task.id])
+      await setLessonTasks(lessonId, [...currentIds, task.id])
       return task
     },
     onSuccess: () => {
@@ -108,14 +108,14 @@ export function useDeleteTask() {
   })
 }
 
-/** Replaces the exam's task list (link, unlink and reorder are all just a new ordered list). */
-export function useSetExamTasks(examId: number) {
+/** Replaces the lesson's task list (link, unlink and reorder are all just a new ordered list). */
+export function useSetLessonTasks(lessonId: number) {
   const h = useWriteHelpers()
   return useMutation({
-    mutationFn: (taskIds: number[]) => setExamTasks(examId, taskIds),
+    mutationFn: (taskIds: number[]) => setLessonTasks(lessonId, taskIds),
     onSuccess: () => {
       h.refresh()
-      h.ok('toast.examTasksUpdated')
+      h.ok('toast.lessonTasksUpdated')
     },
     onError: h.fail,
   })
@@ -123,9 +123,9 @@ export function useSetExamTasks(examId: number) {
 
 export type { AdminTask }
 
-export type BulkAction = { action: 'delete' | 'unlink' } | { action: 'link'; examId: number }
+export type BulkAction = { action: 'delete' | 'unlink' } | { action: 'link'; lessonId: number }
 
-/** Delete, unlink from every exam, or link to one exam, for several bank tasks at once. */
+/** Delete, unlink from every lesson, or link to one lesson, for several bank tasks at once. */
 export function useBulkTasks() {
   const h = useWriteHelpers()
   return useMutation({
@@ -139,13 +139,13 @@ export function useBulkTasks() {
   })
 }
 
-/** Creates many tasks at once (all or nothing), optionally appending them to an exam. */
+/** Creates many tasks at once (all or nothing), optionally appending them to a lesson. */
 export function useImportTasks() {
   const h = useWriteHelpers()
   const toast = useToast()
   const { t } = useI18n()
   return useMutation({
-    mutationFn: (v: { courseId: number; tasks: TaskInput[]; examId?: number }) => unwrap(api.POST('/admin/tasks/import', { body: v })),
+    mutationFn: (v: { courseId: number; tasks: TaskInput[]; lessonId?: number }) => unwrap(api.POST('/admin/tasks/import', { body: v })),
     onSuccess: (r) => {
       h.refresh()
       toast.success(t('toast.tasksImported', { n: r.created }))
@@ -155,7 +155,7 @@ export function useImportTasks() {
 }
 
 /**
- * Downloads tasks as a JSON file that the import dialog accepts: the tasks of one exam (in order) when `examId` is given,
+ * Downloads tasks as a JSON file that the import dialog accepts: the tasks of one lesson (in order) when `lessonId` is given,
  * otherwise every task of the course (ignoring filters).
  */
 export function useExportTasks() {
@@ -163,9 +163,9 @@ export function useExportTasks() {
   const { t } = useI18n()
   const errorText = useErrorText()
   return useMutation({
-    mutationFn: async ({ courseId, examId }: { courseId: number; examId?: number }) => {
-      const all = examId
-        ? await unwrap(api.GET('/admin/exams/{examID}/tasks', { params: { path: { examID: examId } } }))
+    mutationFn: async ({ courseId, lessonId }: { courseId: number; lessonId?: number }) => {
+      const all = lessonId
+        ? await unwrap(api.GET('/admin/lessons/{lessonID}/tasks', { params: { path: { lessonID: lessonId } } }))
         : await unwrap(api.GET('/admin/tasks', { params: { query: { courseId } } }))
       const tasks: TaskInput[] = all.map((x) => ({
         prompt: x.prompt,
@@ -178,7 +178,7 @@ export function useExportTasks() {
       const url = URL.createObjectURL(new Blob([JSON.stringify(tasks, null, 2)], { type: 'application/json' }))
       const a = document.createElement('a')
       a.href = url
-      a.download = `${examId ? `exam-${examId}` : 'tasks'}-${new Date().toISOString().slice(0, 10)}.json`
+      a.download = `${lessonId ? `lesson-${lessonId}` : 'tasks'}-${new Date().toISOString().slice(0, 10)}.json`
       a.click()
       URL.revokeObjectURL(url)
       return tasks.length

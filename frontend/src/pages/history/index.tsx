@@ -26,7 +26,7 @@ export function HistoryPage() {
               <Card>
                 <CardContent className="flex items-center gap-3 px-4 py-2.5">
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-bold leading-snug">{pick(a.examTitleRu, a.examTitleEn)}</p>
+                    <p className="text-sm font-bold leading-snug">{pick(a.lessonTitleRu, a.lessonTitleEn)}</p>
                     <p className="mt-0.5 text-xs text-muted-foreground">
                       {t(`mode.${a.mode}`)} · {formatDate(a.startedAt, lang)}
                       {done && a.durationSeconds != null && ` · ${formatDuration(a.durationSeconds)}`}

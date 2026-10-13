@@ -17,17 +17,17 @@ type Task struct {
 	AudioAutoplay bool `json:"audioAutoplay"`
 }
 
-type ExamRef struct {
+type LessonRef struct {
 	ID      int64  `json:"id"`
 	TitleRu string `json:"titleRu"`
 	TitleEn string `json:"titleEn"`
 }
 
-// AdminTask is a task as the admin sees it: with its course and the exams it is linked to.
+// AdminTask is a task as the admin sees it: with its course and the lessons it is linked to.
 type AdminTask struct {
 	Task
-	CourseID int64     `json:"courseId"`
-	UsedIn   []ExamRef `json:"usedIn"`
+	CourseID int64       `json:"courseId"`
+	UsedIn   []LessonRef `json:"usedIn"`
 	// ExternalID is only ever sent to admins (this type is only used by admin endpoints).
 	ExternalID *string `json:"externalId"`
 }
@@ -38,23 +38,23 @@ func (t Task) hidden() Task {
 	return t
 }
 
-// Course groups exams and tasks; learners pick one in the header.
+// Course groups lessons and tasks; learners pick one in the header.
 type Course struct {
-	ID         int64  `json:"id"`
-	TitleRu    string `json:"titleRu"`
-	TitleEn    string `json:"titleEn"`
-	Flag       string `json:"flag"`
-	ExamsCount int    `json:"examsCount"`
-	TasksCount int    `json:"tasksCount"`
+	ID           int64  `json:"id"`
+	TitleRu      string `json:"titleRu"`
+	TitleEn      string `json:"titleEn"`
+	Flag         string `json:"flag"`
+	LessonsCount int    `json:"lessonsCount"`
+	TasksCount   int    `json:"tasksCount"`
 }
 
-// Category groups the exams of one course on the home page.
+// Category groups the lessons of one course on the home page.
 type Category struct {
-	ID         int64  `json:"id"`
-	CourseID   int64  `json:"courseId"`
-	TitleRu    string `json:"titleRu"`
-	TitleEn    string `json:"titleEn"`
-	ExamsCount int    `json:"examsCount"`
+	ID           int64  `json:"id"`
+	CourseID     int64  `json:"courseId"`
+	TitleRu      string `json:"titleRu"`
+	TitleEn      string `json:"titleEn"`
+	LessonsCount int    `json:"lessonsCount"`
 }
 
 // CategoryInput.CourseID is required when a category is created and ignored on update: a category never changes course.
@@ -85,8 +85,8 @@ type TaskInput struct {
 	ExternalID *string `json:"externalId"`
 }
 
-// ExamInput.CourseID is required when an exam is created and ignored on update: an exam never changes course.
-type ExamInput struct {
+// LessonInput.CourseID is required when a lesson is created and ignored on update: a lesson never changes course.
+type LessonInput struct {
 	CourseID      int64  `json:"courseId"`
 	CategoryID    *int64 `json:"categoryId"`
 	PreserveOrder bool   `json:"preserveOrder"`
@@ -96,39 +96,39 @@ type ExamInput struct {
 	DescriptionEn string `json:"descriptionEn"`
 }
 
-type ExamStats struct {
+type LessonStats struct {
 	AttemptsCount int      `json:"attemptsCount"`
 	AvgScore      *float64 `json:"avgScore"`
 }
 
-type MyExamStats struct {
+type MyLessonStats struct {
 	AttemptsCount int      `json:"attemptsCount"`
 	BestScore     *float64 `json:"bestScore"`
 	LastScore     *float64 `json:"lastScore"`
 }
 
-type Exam struct {
+type Lesson struct {
 	ID         int64  `json:"id"`
 	CourseID   int64  `json:"courseId"`
 	CategoryID *int64 `json:"categoryId"`
-	// Status is "pending" until an admin approves the exam; learners only see approved exams.
+	// Status is "pending" until an admin approves the lesson; learners only see approved lessons.
 	Status string `json:"status"`
 	// PreserveOrder: sessions keep the task order instead of shuffling it.
-	PreserveOrder bool         `json:"preserveOrder"`
-	TitleRu       string       `json:"titleRu"`
-	TitleEn       string       `json:"titleEn"`
-	DescriptionRu string       `json:"descriptionRu"`
-	DescriptionEn string       `json:"descriptionEn"`
-	TasksCount    int          `json:"tasksCount"`
-	Stats         ExamStats    `json:"stats"`
-	MyStats       *MyExamStats `json:"myStats,omitempty"`
+	PreserveOrder bool           `json:"preserveOrder"`
+	TitleRu       string         `json:"titleRu"`
+	TitleEn       string         `json:"titleEn"`
+	DescriptionRu string         `json:"descriptionRu"`
+	DescriptionEn string         `json:"descriptionEn"`
+	TasksCount    int            `json:"tasksCount"`
+	Stats         LessonStats    `json:"stats"`
+	MyStats       *MyLessonStats `json:"myStats,omitempty"`
 }
 
 type Attempt struct {
 	ID              int64      `json:"id"`
-	ExamID          int64      `json:"examId"`
-	ExamTitleRu     string     `json:"examTitleRu"`
-	ExamTitleEn     string     `json:"examTitleEn"`
+	LessonID        int64      `json:"lessonId"`
+	LessonTitleRu   string     `json:"lessonTitleRu"`
+	LessonTitleEn   string     `json:"lessonTitleEn"`
 	Mode            string     `json:"mode"`
 	Status          string     `json:"status"`
 	StartedAt       time.Time  `json:"startedAt"`
@@ -137,7 +137,7 @@ type Attempt struct {
 	CorrectCount    *int       `json:"correctCount"`
 	TotalCount      *int       `json:"totalCount"`
 	ScorePercent    *float64   `json:"scorePercent"`
-	// PreserveOrder is the exam's setting: the session must not shuffle its tasks.
+	// PreserveOrder is the lesson's setting: the session must not shuffle its tasks.
 	PreserveOrder bool `json:"preserveOrder"`
 }
 

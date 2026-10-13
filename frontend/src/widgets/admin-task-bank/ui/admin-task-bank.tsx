@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Input, Select } from '@/shared/ui/input'
 import { ErrorMessage, Loading } from '@/shared/ui/states'
 import { CourseGate } from '@/entities/course'
-import { useExams } from '@/entities/exam'
+import { useLessons } from '@/entities/lesson'
 import { ImportTasksDialog, TaskForm, useBankTasks, useBulkTasks, type BulkAction, useCreateTask, useDeleteTask, useExportTasks, useUpdateTask } from '@/features/manage-tasks'
 
 type Editing = { kind: 'new' } | { kind: 'edit'; task: AdminTask } | null
@@ -27,7 +27,7 @@ function TaskBank({ courseId }: { courseId: number }) {
   const del = useDeleteTask()
   const bulk = useBulkTasks()
   const exportTasks = useExportTasks()
-  const exams = useExams()
+  const lessons = useLessons()
   const [selected, setSelected] = useState<Set<number>>(new Set())
   const ids = [...selected]
   const visibleIds = data?.map((x) => x.id) ?? []
@@ -41,7 +41,7 @@ function TaskBank({ courseId }: { courseId: number }) {
   const run = (a: BulkAction) => bulk.mutate({ taskIds: ids, ...a }, { onSuccess: () => setSelected(new Set()) })
   const close = () => setEditing(null)
 
-  const examName = (e: { titleRu: string; titleEn: string }) => pick(e.titleRu, e.titleEn)
+  const lessonName = (e: { titleRu: string; titleEn: string }) => pick(e.titleRu, e.titleEn)
 
   return (
     <div className="space-y-4">
@@ -101,15 +101,15 @@ function TaskBank({ courseId }: { courseId: number }) {
           <span className="mr-auto text-sm font-bold">{t('admin.selectedN', { n: selected.size })}</span>
           <Select
             className="w-auto"
-            aria-label={t('admin.linkToExam')}
+            aria-label={t('admin.linkToLesson')}
             value=""
             disabled={bulk.isPending}
-            onChange={(e) => e.target.value && run({ action: 'link', examId: Number(e.target.value) })}
+            onChange={(e) => e.target.value && run({ action: 'link', lessonId: Number(e.target.value) })}
           >
-            <option value="">{t('admin.linkToExam')}</option>
-            {exams.data?.map((x) => (
+            <option value="">{t('admin.linkToLesson')}</option>
+            {lessons.data?.map((x) => (
               <option key={x.id} value={x.id}>
-                {examName(x)}
+                {lessonName(x)}
               </option>
             ))}
           </Select>
@@ -177,7 +177,7 @@ function TaskBank({ courseId }: { courseId: number }) {
                           {task.externalId} ·{' '}
                         </span>
                       )}
-                      {task.usedIn.length === 0 ? t('admin.notUsed') : t('admin.usedIn', { names: task.usedIn.map(examName).join(', ') })}
+                      {task.usedIn.length === 0 ? t('admin.notUsed') : t('admin.usedIn', { names: task.usedIn.map(lessonName).join(', ') })}
                     </p>
                   </div>
                   <Button variant="outline" size="sm" disabled={del.isPending} onClick={() => setEditing({ kind: 'edit', task })}>

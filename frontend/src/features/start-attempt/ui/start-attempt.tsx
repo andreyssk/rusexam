@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { BookOpen, RotateCcw, Timer } from 'lucide-react'
+import { Play, RotateCcw } from 'lucide-react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { api, unwrap, type Mode } from '@/shared/api'
 import { useI18n } from '@/shared/lib/i18n'
@@ -7,12 +7,12 @@ import { Button } from '@/shared/ui/button'
 import { ErrorMessage } from '@/shared/ui/states'
 import { useAuth } from '@/entities/user'
 
-function useStartAttempt(examId: number) {
+function useStartAttempt(lessonId: number) {
   const navigate = useNavigate()
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (mode: Mode) =>
-      unwrap(api.POST('/exams/{examID}/attempts', { params: { path: { examID: examId } }, body: { mode } })),
+      unwrap(api.POST('/lessons/{lessonID}/attempts', { params: { path: { lessonID: lessonId } }, body: { mode } })),
     onSuccess: (attempt) => {
       void qc.invalidateQueries({ queryKey: ['my-attempts'] })
       navigate(`/attempts/${attempt.id}`)
@@ -20,10 +20,10 @@ function useStartAttempt(examId: number) {
   })
 }
 
-/** Starts a fresh attempt of the same exam in the same mode (shown on the results page). */
-export function RetryAttempt({ examId, mode, className }: { examId: number; mode: Mode; className?: string }) {
+/** Starts a fresh attempt of the same lesson in the same mode (shown on the results page). */
+export function RetryAttempt({ lessonId, mode, className }: { lessonId: number; mode: Mode; className?: string }) {
   const { t } = useI18n()
-  const start = useStartAttempt(examId)
+  const start = useStartAttempt(lessonId)
   return (
     <div className="space-y-2">
       <Button className={className} loading={start.isPending} onClick={() => start.mutate(mode)}>
@@ -34,38 +34,28 @@ export function RetryAttempt({ examId, mode, className }: { examId: number; mode
   )
 }
 
-export function StartAttempt({ examId, disabled, compact }: { examId: number; disabled?: boolean; compact?: boolean }) {
+/** Starts practicing a lesson: just a play icon, for the right-hand side of a lesson row. */
+export function StartAttempt({ lessonId, disabled }: { lessonId: number; disabled?: boolean }) {
   const { t } = useI18n()
   const { user } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  const start = useStartAttempt(examId)
+  const start = useStartAttempt(lessonId)
 
-  if (!user) {
-    return (
-      <Button variant="outline" size={compact ? 'sm' : 'default'} className={compact ? 'w-full md:w-auto' : 'w-full'} onClick={() => navigate('/login', { state: { from: location.pathname } })}>
-        {t('exam.loginToStart')}
-      </Button>
-    )
-  }
-
+  // Visitors are sent to log in first; the icon looks and sits the same.
+  const label = user ? t('lesson.training') : t('lesson.loginToStart')
   return (
     <div className="space-y-2">
-      <div className={compact ? 'flex gap-2' : 'grid grid-cols-2 gap-2'}>
-        <Button
-          variant="outline"
-          size={compact ? 'sm' : 'default'}
-          className={compact ? 'flex-1 md:flex-none' : ''}
-          disabled={disabled || start.isPending}
-          onClick={() => start.mutate('training')}
-          title={t('exam.trainingHint')}
-        >
-          <BookOpen size={16} /> {t('exam.training')}
-        </Button>
-        <Button size={compact ? 'sm' : 'default'} className={compact ? 'flex-1 md:flex-none' : ''} disabled={disabled || start.isPending} onClick={() => start.mutate('exam')} title={t('exam.examHint')}>
-          <Timer size={16} /> {t('exam.exam')}
-        </Button>
-      </div>
+      <Button
+        size="icon"
+        className="size-11"
+        disabled={user ? disabled || start.isPending : false}
+        loading={start.isPending}
+        onClick={() => (user ? start.mutate('training') : navigate('/login', { state: { from: location.pathname } }))}
+        aria-label={label}
+      >
+        <Play size={20} fill="currentColor" />
+      </Button>
       {start.isError && <ErrorMessage error={start.error} />}
     </div>
   )

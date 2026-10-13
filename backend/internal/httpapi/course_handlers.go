@@ -11,7 +11,7 @@ import (
 
 const coursesQuery = `
 SELECT c.id, c.title_ru, c.title_en, c.flag,
-       (SELECT count(*) FROM exams e WHERE e.course_id = c.id)::int,
+       (SELECT count(*) FROM lessons e WHERE e.course_id = c.id)::int,
        (SELECT count(*) FROM tasks t WHERE t.course_id = c.id)::int
 FROM courses c
 WHERE ($1::bigint IS NULL OR c.id = $1)
@@ -26,7 +26,7 @@ func (s *Server) queryCourses(r *http.Request, id *int64) ([]Course, error) {
 	out := []Course{}
 	for rows.Next() {
 		var c Course
-		if err := rows.Scan(&c.ID, &c.TitleRu, &c.TitleEn, &c.Flag, &c.ExamsCount, &c.TasksCount); err != nil {
+		if err := rows.Scan(&c.ID, &c.TitleRu, &c.TitleEn, &c.Flag, &c.LessonsCount, &c.TasksCount); err != nil {
 			return nil, err
 		}
 		out = append(out, c)
@@ -129,7 +129,7 @@ func (s *Server) adminUpdateCourse(w http.ResponseWriter, r *http.Request) {
 	s.writeCourse(w, r, id, http.StatusOK)
 }
 
-// adminDeleteCourse refuses to delete a course that still has exams or tasks, so content is never lost by accident.
+// adminDeleteCourse refuses to delete a course that still has lessons or tasks, so content is never lost by accident.
 func (s *Server) adminDeleteCourse(w http.ResponseWriter, r *http.Request) {
 	id, ok := pathID(w, r, "courseID")
 	if !ok {
@@ -138,7 +138,7 @@ func (s *Server) adminDeleteCourse(w http.ResponseWriter, r *http.Request) {
 	tag, err := s.pool.Exec(r.Context(), `DELETE FROM courses WHERE id = $1`, id)
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) && pgErr.Code == "23503" {
-		writeError(w, http.StatusConflict, "the course still has exams or tasks; delete or empty it first")
+		writeError(w, http.StatusConflict, "the course still has lessons or tasks; delete or empty it first")
 		return
 	}
 	if err != nil {

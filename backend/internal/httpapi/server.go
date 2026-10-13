@@ -44,8 +44,8 @@ func New(pool *pgxpool.Pool, tokens *auth.Tokens, cookieSecure bool) http.Handle
 
 		r.Get("/courses", s.listCourses)
 		r.Get("/categories", s.listCategories)
-		r.With(s.optionalAuth).Get("/exams", s.listExams)
-		r.With(s.optionalAuth).Get("/exams/{examID}", s.getExam)
+		r.With(s.optionalAuth).Get("/lessons", s.listLessons)
+		r.With(s.optionalAuth).Get("/lessons/{lessonID}", s.getLesson)
 
 		r.Get("/settings", s.getSettings)
 
@@ -56,12 +56,12 @@ func New(pool *pgxpool.Pool, tokens *auth.Tokens, cookieSecure bool) http.Handle
 			r.Put("/me/preferences", s.updatePreferences)
 			r.Get("/assets/{assetID}/file", s.getAssetFile)
 
-			// Taking exams is for learners only; admins manage content and users.
+			// Taking lessons is for learners only; admins manage content and users.
 			r.Group(func(r chi.Router) {
 				r.Use(s.requireLearner)
 				r.Get("/me/attempts", s.myAttempts)
 				r.Get("/me/streak", s.myStreak)
-				r.Post("/exams/{examID}/attempts", s.startAttempt)
+				r.Post("/lessons/{lessonID}/attempts", s.startAttempt)
 				r.Get("/attempts/{attemptID}", s.getAttempt)
 				r.Put("/attempts/{attemptID}/answers/{taskID}", s.saveAnswer)
 				r.Post("/attempts/{attemptID}/finish", s.finishAttempt)
@@ -84,12 +84,12 @@ func New(pool *pgxpool.Pool, tokens *auth.Tokens, cookieSecure bool) http.Handle
 			r.Put("/assets/{assetID}", s.adminUpdateAsset)
 			r.Delete("/assets/{assetID}", s.adminDeleteAsset)
 
-			r.Post("/exams", s.adminCreateExam)
-			r.Put("/exams/{examID}", s.adminUpdateExam)
-			r.Put("/exams/{examID}/status", s.adminSetExamStatus)
-			r.Delete("/exams/{examID}", s.adminDeleteExam)
-			r.Get("/exams/{examID}/tasks", s.adminListExamTasks)
-			r.Put("/exams/{examID}/tasks", s.adminSetExamTasks)
+			r.Post("/lessons", s.adminCreateLesson)
+			r.Put("/lessons/{lessonID}", s.adminUpdateLesson)
+			r.Put("/lessons/{lessonID}/status", s.adminSetLessonStatus)
+			r.Delete("/lessons/{lessonID}", s.adminDeleteLesson)
+			r.Get("/lessons/{lessonID}/tasks", s.adminListLessonTasks)
+			r.Put("/lessons/{lessonID}/tasks", s.adminSetLessonTasks)
 
 			r.Get("/tasks", s.adminListBankTasks)
 			r.Post("/tasks", s.adminCreateTask)
@@ -156,7 +156,7 @@ func (s *Server) requireAuth(next http.Handler) http.Handler {
 func (s *Server) requireLearner(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if c, _ := r.Context().Value(ctxKey{}).(auth.Claims); c.Role == auth.RoleAdmin {
-			writeError(w, http.StatusForbidden, "admins cannot take exams")
+			writeError(w, http.StatusForbidden, "admins cannot take lessons")
 			return
 		}
 		next.ServeHTTP(w, r)

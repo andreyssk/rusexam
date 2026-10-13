@@ -6,7 +6,7 @@ import { Button } from '@/shared/ui/button'
 import { Label, Select, Textarea } from '@/shared/ui/input'
 import { ErrorMessage } from '@/shared/ui/states'
 import { useCurrentCourse } from '@/entities/course'
-import { useExams } from '@/entities/exam'
+import { useLessons } from '@/entities/lesson'
 import { useImportTasks } from '../api/hooks'
 
 const EXAMPLE: TaskInput[] = [
@@ -39,21 +39,21 @@ function parseTasks(text: string): TaskInput[] {
 type DialogProps = {
   open: boolean
   onClose: () => void
-  /** Import straight into this exam (of `courseId`): the new tasks are appended to it and the exam picker is hidden. */
-  target?: { examId: number; courseId: number }
+  /** Import straight into this lesson (of `courseId`): the new tasks are appended to it and the lesson picker is hidden. */
+  target?: { lessonId: number; courseId: number }
 }
 
 export function ImportTasksDialog({ open, onClose, target }: DialogProps) {
   const { t, pick } = useI18n()
   const dialog = useRef<HTMLDialogElement>(null)
   const fileInput = useRef<HTMLInputElement>(null)
-  const exams = useExams()
+  const lessons = useLessons()
   const { course } = useCurrentCourse()
   const imp = useImportTasks()
   // The pasted (or file-loaded) text is the single source of truth; parsing is derived from it.
   const [text, setText] = useState('')
   const [fileName, setFileName] = useState('')
-  const [examId, setExamId] = useState('')
+  const [lessonId, setLessonId] = useState('')
 
   useEffect(() => {
     const d = dialog.current
@@ -63,7 +63,7 @@ export function ImportTasksDialog({ open, onClose, target }: DialogProps) {
     if (!open) {
       setText('')
       setFileName('')
-      setExamId('')
+      setLessonId('')
       imp.reset()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -155,10 +155,10 @@ export function ImportTasksDialog({ open, onClose, target }: DialogProps) {
 
           {!target && (
           <div>
-            <Label htmlFor="import-exam">{t('admin.importLink')}</Label>
-            <Select id="import-exam" value={examId} onChange={(e) => setExamId(e.target.value)}>
-              <option value="">{t('admin.importNoExam')}</option>
-              {exams.data?.map((x) => (
+            <Label htmlFor="import-lesson">{t('admin.importLink')}</Label>
+            <Select id="import-lesson" value={lessonId} onChange={(e) => setLessonId(e.target.value)}>
+              <option value="">{t('admin.importNoLesson')}</option>
+              {lessons.data?.map((x) => (
                 <option key={x.id} value={x.id}>
                   {pick(x.titleRu, x.titleEn)}
                 </option>
@@ -178,8 +178,8 @@ export function ImportTasksDialog({ open, onClose, target }: DialogProps) {
               disabled={!tasks || tasks.length === 0}
               onClick={() => {
                 const courseId = target?.courseId ?? course?.id
-                const exam = target?.examId ?? (examId ? Number(examId) : undefined)
-                if (tasks && courseId) imp.mutate({ courseId, tasks, examId: exam }, { onSuccess: onClose })
+                const lesson = target?.lessonId ?? (lessonId ? Number(lessonId) : undefined)
+                if (tasks && courseId) imp.mutate({ courseId, tasks, lessonId: lesson }, { onSuccess: onClose })
               }}
             >
               {t('admin.importRun')}

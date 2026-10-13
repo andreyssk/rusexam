@@ -68,7 +68,7 @@ export function AdminCourseList() {
                     <div className="min-w-0 flex-1">
                       <p className="font-extrabold">{pick(c.titleRu, c.titleEn)}</p>
                       <p className="text-sm text-muted-foreground">
-                        {t('course.counts', { exams: c.examsCount, tasks: c.tasksCount })}
+                        {t('course.counts', { lessons: c.lessonsCount, tasks: c.tasksCount })}
                       </p>
                     </div>
                     <Button variant="outline" size="sm" onClick={() => setEditingId(c.id)}>
@@ -81,7 +81,7 @@ export function AdminCourseList() {
                       loading={del.isPending && del.variables === c.id}
                       disabled={del.isPending}
                       onClick={async () => {
-                        if (c.examsCount > 0 || c.tasksCount > 0) return toast.error(t('course.deleteBlocked'))
+                        if (c.lessonsCount > 0 || c.tasksCount > 0) return toast.error(t('course.deleteBlocked'))
                         if (await confirm({ message: t('course.deleteConfirm'), confirmLabel: t('admin.confirmDelete'), destructive: true })) del.mutate(c.id)
                       }}
                     >

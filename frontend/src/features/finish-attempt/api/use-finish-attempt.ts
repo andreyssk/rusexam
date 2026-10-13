@@ -24,7 +24,7 @@ export function useFinishAttempt(attemptId: number) {
       if (before && !before.doneToday) streakUpdate.show(before.current, before.current + 1)
       qc.setQueryData(['result', attemptId], result)
       qc.removeQueries({ queryKey: ['attempt', attemptId] })
-      void qc.invalidateQueries({ queryKey: ['exams'] })
+      void qc.invalidateQueries({ queryKey: ['lessons'] })
       void qc.invalidateQueries({ queryKey: ['my-attempts'] })
       void qc.invalidateQueries({ queryKey: ['streak'] })
       navigate(redirectTo ?? `/attempts/${attemptId}/result`, { replace: true })

@@ -10,13 +10,13 @@ import (
 const maxDurationSeconds = 7 * 24 * 3600
 
 const attemptSelect = `
-SELECT a.id, a.exam_id, e.title_ru, e.title_en, a.mode, a.status, a.started_at, a.finished_at,
+SELECT a.id, a.lesson_id, e.title_ru, e.title_en, a.mode, a.status, a.started_at, a.finished_at,
        a.duration_seconds, a.correct_count, a.total_count, a.score_percent::float8, e.preserve_order
-FROM attempts a JOIN exams e ON e.id = a.exam_id`
+FROM attempts a JOIN lessons e ON e.id = a.lesson_id`
 
 func scanAttempt(row pgx.Row) (Attempt, error) {
 	var a Attempt
-	err := row.Scan(&a.ID, &a.ExamID, &a.ExamTitleRu, &a.ExamTitleEn, &a.Mode, &a.Status, &a.StartedAt,
+	err := row.Scan(&a.ID, &a.LessonID, &a.LessonTitleRu, &a.LessonTitleEn, &a.Mode, &a.Status, &a.StartedAt,
 		&a.FinishedAt, &a.DurationSeconds, &a.CorrectCount, &a.TotalCount, &a.ScorePercent, &a.PreserveOrder)
 	return a, err
 }
@@ -61,7 +61,7 @@ func (s *Server) myAttempts(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) startAttempt(w http.ResponseWriter, r *http.Request) {
-	examID, ok := pathID(w, r, "examID")
+	lessonID, ok := pathID(w, r, "lessonID")
 	if !ok {
 		return
 	}
@@ -77,20 +77,20 @@ func (s *Server) startAttempt(w http.ResponseWriter, r *http.Request) {
 	}
 	var tasksCount int
 	if err := s.pool.QueryRow(r.Context(),
-		`SELECT (SELECT count(*) FROM exam_tasks WHERE exam_id = e.id)::int FROM exams e WHERE e.id = $1 AND e.status = 'approved'`,
-		examID).Scan(&tasksCount); err != nil {
-		fail(w, err) // an unknown or still pending exam is a 404
+		`SELECT (SELECT count(*) FROM lesson_tasks WHERE lesson_id = e.id)::int FROM lessons e WHERE e.id = $1 AND e.status = 'approved'`,
+		lessonID).Scan(&tasksCount); err != nil {
+		fail(w, err) // an unknown or still pending lesson is a 404
 		return
 	}
 	if tasksCount == 0 {
-		writeError(w, http.StatusConflict, "this exam has no tasks yet")
+		writeError(w, http.StatusConflict, "this lesson has no tasks yet")
 		return
 	}
 	c, _ := claims(r)
 	var id int64
 	if err := s.pool.QueryRow(r.Context(),
-		`INSERT INTO attempts (user_id, exam_id, mode) VALUES ($1, $2, $3) RETURNING id`,
-		c.UserID, examID, in.Mode).Scan(&id); err != nil {
+		`INSERT INTO attempts (user_id, lesson_id, mode) VALUES ($1, $2, $3) RETURNING id`,
+		c.UserID, lessonID, in.Mode).Scan(&id); err != nil {
 		fail(w, err)
 		return
 	}
@@ -136,7 +136,7 @@ func (s *Server) getAttempt(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	full, err := loadTasks(r.Context(), s.pool, a.ExamID)
+	full, err := loadTasks(r.Context(), s.pool, a.LessonID)
 	if err != nil {
 		fail(w, err)
 		return
@@ -198,9 +198,9 @@ func (s *Server) saveAnswer(w http.ResponseWriter, r *http.Request) {
 	var ci int
 	err := s.pool.QueryRow(r.Context(),
 		`SELECT t.id, t.options, t.correct_index, t.explanation
-		 FROM tasks t JOIN exam_tasks et ON et.task_id = t.id
-		 WHERE t.id = $1 AND et.exam_id = $2`,
-		taskID, a.ExamID).Scan(&t.ID, &t.Options, &ci, &t.Explanation)
+		 FROM tasks t JOIN lesson_tasks et ON et.task_id = t.id
+		 WHERE t.id = $1 AND et.lesson_id = $2`,
+		taskID, a.LessonID).Scan(&t.ID, &t.Options, &ci, &t.Explanation)
 	if err != nil {
 		fail(w, err)
 		return
@@ -260,16 +260,16 @@ func (s *Server) finishAttempt(w http.ResponseWriter, r *http.Request) {
 		WITH c AS (
 			SELECT count(t.id)::int AS total,
 			       count(*) FILTER (WHERE aa.selected_index = t.correct_index)::int AS correct
-			FROM exam_tasks et
+			FROM lesson_tasks et
 			JOIN tasks t ON t.id = et.task_id
 			LEFT JOIN attempt_answers aa ON aa.task_id = t.id AND aa.attempt_id = $1
-			WHERE et.exam_id = $2
+			WHERE et.lesson_id = $2
 		)
 		UPDATE attempts SET status = 'completed', finished_at = now(), duration_seconds = $3,
 		       correct_count = c.correct, total_count = c.total,
 		       score_percent = CASE WHEN c.total = 0 THEN 0 ELSE round(c.correct * 100.0 / c.total, 2) END
 		FROM c WHERE attempts.id = $1 AND attempts.status = 'in_progress'`,
-		a.ID, a.ExamID, in.DurationSeconds)
+		a.ID, a.LessonID, in.DurationSeconds)
 	if err != nil {
 		fail(w, err)
 		return
@@ -299,7 +299,7 @@ func (s *Server) writeResult(w http.ResponseWriter, r *http.Request, attemptID i
 		fail(w, err)
 		return
 	}
-	tasks, err := loadTasks(r.Context(), s.pool, a.ExamID)
+	tasks, err := loadTasks(r.Context(), s.pool, a.LessonID)
 	if err != nil {
 		fail(w, err)
 		return

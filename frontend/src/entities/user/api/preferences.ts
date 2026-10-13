@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef } from 'react'
 import { api, unwrap, type Preferences } from '@/shared/api'
 import { useAuth } from '../model/auth'
 
-const DEFAULTS: Preferences = { audioVolume: 0.5, audioSpeed: 1 }
+const DEFAULTS: Preferences = { audioVolume: 0.5, audioSpeed: 1, collapsedCategories: [] }
 
 /**
  * The signed-in user's own settings, stored on their account so they follow them to any device.
@@ -33,8 +33,12 @@ export function usePreferences() {
   useEffect(() => flush, [flush])
 
   const update = (patch: Partial<Preferences>) => {
+    // Not before the saved settings have arrived: that would overwrite them with the defaults.
+    if (user && !query.isSuccess) return
     const next = { ...prefs, ...patch }
     qc.setQueryData(key, next)
+    // Visitors have no account to save to; their choice just lasts until the page is closed.
+    if (!user) return
     unsaved.current = next
     window.clearTimeout(timer.current)
     timer.current = window.setTimeout(flush, 400)

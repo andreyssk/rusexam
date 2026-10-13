@@ -7,7 +7,7 @@ import { Button } from '@/shared/ui/button'
 import { Card, CardContent } from '@/shared/ui/card'
 import { ErrorMessage, Loading } from '@/shared/ui/states'
 import { useResult } from '@/entities/attempt'
-import { RetryAttempt, StartAttempt } from '@/features/start-attempt'
+import { RetryAttempt } from '@/features/start-attempt'
 
 export function ResultSummary({ attemptId }: { attemptId: number }) {
   const { t, pick } = useI18n()
@@ -23,7 +23,7 @@ export function ResultSummary({ attemptId }: { attemptId: number }) {
     <div className="space-y-6">
       <div>
         <p className="text-sm text-muted-foreground">{t('result.title')}</p>
-        <h1 className="text-xl font-extrabold">{pick(attempt.examTitleRu, attempt.examTitleEn)}</h1>
+        <h1 className="text-xl font-extrabold">{pick(attempt.lessonTitleRu, attempt.lessonTitleEn)}</h1>
       </div>
 
       <Card>
@@ -45,9 +45,9 @@ export function ResultSummary({ attemptId }: { attemptId: number }) {
           </dl>
           {/* Its own full-width row, split evenly between the two buttons. */}
           <div className="grid grid-cols-2 items-start gap-2 sm:col-span-full">
-            <RetryAttempt examId={attempt.examId} mode={attempt.mode} className="w-full whitespace-nowrap px-2 max-sm:text-xs sm:px-5" />
+            <RetryAttempt lessonId={attempt.lessonId} mode={attempt.mode} className="w-full whitespace-nowrap px-2 max-sm:text-xs sm:px-5" />
             <Button variant="outline" className="w-full whitespace-nowrap px-2 max-sm:text-xs sm:px-5" asChild>
-              <Link to="/">{t('result.toExams')}</Link>
+              <Link to="/">{t('result.toLessons')}</Link>
             </Button>
           </div>
         </CardContent>
@@ -86,14 +86,9 @@ export function ResultSummary({ attemptId }: { attemptId: number }) {
         })}
       </section>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="w-full max-w-xs">
-          <StartAttempt examId={attempt.examId} />
-        </div>
-        <Button variant="ghost" asChild>
-          <Link to="/">{t('result.backHome')}</Link>
-        </Button>
-      </div>
+      <Button variant="ghost" asChild>
+        <Link to="/">{t('result.backHome')}</Link>
+      </Button>
     </div>
   )
 }

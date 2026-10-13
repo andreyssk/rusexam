@@ -1,6 +1,6 @@
 # Russian exam prep
 
-Practice tests for the Russian language, history and law exam (RVP, residence permit, citizenship), for English speakers.
+Practice tests for the Russian language, history and law lesson (RVP, residence permit, citizenship), for English speakers.
 
 - **Backend:** Go, chi, pgx (raw SQL), goose migrations (embedded, run on startup), PostgreSQL
 - **Frontend:** React, Vite, bun, TanStack Query, React Router, Tailwind v4, Feature-Sliced Design
@@ -15,7 +15,7 @@ make dev-web             # terminal 2: http://localhost:5174
 ```
 
 The admin account comes from `ADMIN_USERNAME` / `ADMIN_PASSWORD` and is re-synced on every API start.
-`SEED_SAMPLE_DATA=true` loads two sample exams, but only while the exams table is empty.
+`SEED_SAMPLE_DATA=true` loads two sample lessons, but only while the lessons table is empty.
 
 ## Auth
 
@@ -26,14 +26,14 @@ The admin account comes from `ADMIN_USERNAME` / `ADMIN_PASSWORD` and is re-synce
 
 ## Roles
 
-- **Learners** sign up, take exams in training or exam mode and see their History.
-- **Admin** (from `ADMIN_USERNAME` / `ADMIN_PASSWORD`) cannot take exams and has no History. The admin area has:
-  - **Courses:** create, edit, delete (name in RU/EN plus a flag emoji). Every exam and task belongs to exactly one
-    course and never moves; a course can only be deleted once it has no exams or tasks. The course is picked in the
+- **Learners** sign up, take lessons in training or exam mode and see their History.
+- **Admin** (from `ADMIN_USERNAME` / `ADMIN_PASSWORD`) cannot take lessons and has no History. The admin area has:
+  - **Courses:** create, edit, delete (name in RU/EN plus a flag emoji). Every lesson and task belongs to exactly one
+    course and never moves; a course can only be deleted once it has no lessons or tasks. The course is picked in the
     header dropdown (shown as its flag, remembered in the browser) and scopes everything below, for learners and admin.
-  - **Exams:** create, edit, delete; build each exam from the task bank of its course (add, remove, reorder).
-  - **Tasks:** the task bank of the selected course. Tasks are independent of exams; one exam can have any number of tasks and one task can
-    be in any number of exams. Editing a task changes it in every exam that uses it; deleting it removes it everywhere.
+  - **Lessons:** create, edit, delete; build each lesson from the task bank of its course (add, remove, reorder).
+  - **Tasks:** the task bank of the selected course. Tasks are independent of lessons; one lesson can have any number of tasks and one task can
+    be in any number of lessons. Editing a task changes it in every lesson that uses it; deleting it removes it everywhere.
   - **Users:** block/unblock learners (immediate), reset a password (a one-time temporary password is shown and the user is
     signed out everywhere), and the **Allow new users** switch that opens/closes sign-ups.
 - Every admin write shows a loading state on its button and a success/error snackbar.
@@ -44,7 +44,7 @@ The admin account comes from `ADMIN_USERNAME` / `ADMIN_PASSWORD` and is re-synce
 - **Exam mode:** no feedback until the end; answers can be changed and earlier questions revisited.
 - Unanswered questions count as wrong. The score is a percentage, computed once on finish.
 - The timer has no limit; it counts while the tab is visible, survives reloads, and the time is saved on finish.
-- Exam cards show the average result across all completed attempts, plus your best and last score when logged in.
+- Lesson cards show the average result across all completed attempts, plus your best and last score when logged in.
 - UI language EN/RU; task text is Russian with optional English translations.
 - Duolingo-style look with Auto / Light / Dark themes, chosen in the header.
 
@@ -59,4 +59,4 @@ frontend/src/{app,pages,widgets,features,entities,shared}
 ## Content note
 
 The sample tasks in `backend/internal/db/seed/samples.json` are original practice material in the style of the
-exam, not official Rosobrnadzor variants. Add real tasks through the admin panel (`/admin`).
+lesson, not official Rosobrnadzor variants. Add real tasks through the admin panel (`/admin`).

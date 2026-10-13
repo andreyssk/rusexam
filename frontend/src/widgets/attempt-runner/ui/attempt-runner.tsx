@@ -79,7 +79,7 @@ function Runner({ attemptId, data }: { attemptId: number; data: AttemptState }) 
   const { t, pick } = useI18n()
   const confirm = useConfirm()
   const { attempt } = data
-  // Every session gets its own question order (seeded by the attempt, so a reload keeps it), unless the exam keeps its order.
+  // Every session gets its own question order (seeded by the attempt, so a reload keeps it), unless the lesson keeps its order.
   const tasks = useMemo(() => (attempt.preserveOrder ? data.tasks : seededShuffle(data.tasks, attemptId)), [data.tasks, attempt.preserveOrder, attemptId])
   const total = tasks.length
   const isTraining = attempt.mode === 'training'
@@ -97,7 +97,7 @@ function Runner({ attemptId, data }: { attemptId: number; data: AttemptState }) 
     return { pos: firstOpen === -1 ? Math.max(total - 1, 0) : firstOpen, repeats: [], retries: [] } as Progress
   })
 
-  // Position in the queue: the exam's tasks in order, then repeats of mistaken ones (training only).
+  // Position in the queue: the lesson's tasks in order, then repeats of mistaken ones (training only).
   const [pos, setPos] = useState(restored.pos)
   const [repeats, setRepeats] = useState<number[]>(restored.repeats)
   const [retries, setRetries] = useState<Map<number, Retry>>(() => new Map(restored.retries))
@@ -289,7 +289,7 @@ function Runner({ attemptId, data }: { attemptId: number; data: AttemptState }) 
 
       <div className="flex flex-wrap items-center gap-3">
         {/* Hidden on mobile to save space; screen readers still get it. */}
-        <h1 className="sr-only text-lg font-extrabold md:not-sr-only">{pick(attempt.examTitleRu, attempt.examTitleEn)}</h1>
+        <h1 className="sr-only text-lg font-extrabold md:not-sr-only">{pick(attempt.lessonTitleRu, attempt.lessonTitleEn)}</h1>
         <Badge className={cn(isTraining ? 'bg-accent-soft text-accent' : 'bg-danger-soft text-destructive')}>
           {t(`mode.${attempt.mode}`)}
         </Badge>

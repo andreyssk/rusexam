@@ -1,7 +1,7 @@
 [
   {
-    "titleRu": "Пробный экзамен №1: русский язык, история, законодательство",
-    "titleEn": "Sample exam 1: Russian language, history and law",
+    "titleRu": "Пробный урок №1: русский язык, история, законодательство",
+    "titleEn": "Sample lesson 1: Russian language, history and law",
     "descriptionRu": "Учебный вариант для подготовки к комплексному экзамену (РВП, ВНЖ, гражданство). Составлен для практики, не является официальным вариантом.",
     "descriptionEn": "A practice set for the comprehensive exam (RVP, residence permit, citizenship). Written for practice; it is not an official variant.",
     "tasks": [
@@ -165,8 +165,8 @@
     "level": "rvp"
   },
   {
-    "titleRu": "Пробный экзамен №2: повседневная жизнь, история и государство",
-    "titleEn": "Sample exam 2: everyday life, history and the state",
+    "titleRu": "Пробный урок №2: повседневная жизнь, история и государство",
+    "titleEn": "Sample lesson 2: everyday life, history and the state",
     "descriptionRu": "Второй учебный вариант: больше заданий на чтение и государственное устройство. Составлен для практики.",
     "descriptionEn": "A second practice set with more reading tasks and questions on the state system. Written for practice.",
     "tasks": [

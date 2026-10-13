@@ -1,5 +1,5 @@
-import { AdminExamList } from '@/widgets/admin-exam-list'
+import { AdminLessonList } from '@/widgets/admin-lesson-list'
 
 export function AdminPage() {
-  return <AdminExamList />
+  return <AdminLessonList />
 }

@@ -56,7 +56,7 @@ func EnsureAdmin(ctx context.Context, pool *pgxpool.Pool, username, password str
 	return err
 }
 
-type seedExam struct {
+type seedLesson struct {
 	TitleRu       string     `json:"titleRu"`
 	TitleEn       string     `json:"titleEn"`
 	DescriptionRu string     `json:"descriptionRu"`
@@ -72,17 +72,17 @@ type seedTask struct {
 	Explanation  string   `json:"explanation"`
 }
 
-// SeedSamples inserts the bundled sample exams, but only into an empty exams table.
+// SeedSamples inserts the bundled sample lessons, but only into an empty lessons table.
 func SeedSamples(ctx context.Context, pool *pgxpool.Pool) error {
 	var n int
-	if err := pool.QueryRow(ctx, `SELECT count(*) FROM exams`).Scan(&n); err != nil {
+	if err := pool.QueryRow(ctx, `SELECT count(*) FROM lessons`).Scan(&n); err != nil {
 		return err
 	}
 	if n > 0 {
 		return nil
 	}
-	var exams []seedExam
-	if err := json.Unmarshal(samplesJSON, &exams); err != nil {
+	var lessons []seedLesson
+	if err := json.Unmarshal(samplesJSON, &lessons); err != nil {
 		return fmt.Errorf("parse samples.json: %w", err)
 	}
 	tx, err := pool.Begin(ctx)
@@ -95,12 +95,12 @@ func SeedSamples(ctx context.Context, pool *pgxpool.Pool) error {
 	if err := tx.QueryRow(ctx, `SELECT id FROM courses ORDER BY id LIMIT 1`).Scan(&courseID); err != nil {
 		return err
 	}
-	for _, e := range exams {
-		var examID int64
+	for _, e := range lessons {
+		var lessonID int64
 		err := tx.QueryRow(ctx, `
-			INSERT INTO exams (status, course_id, title_ru, title_en, description_ru, description_en)
+			INSERT INTO lessons (status, course_id, title_ru, title_en, description_ru, description_en)
 			VALUES ('approved', $1, $2, $3, $4, $5) RETURNING id`,
-			courseID, e.TitleRu, e.TitleEn, e.DescriptionRu, e.DescriptionEn).Scan(&examID)
+			courseID, e.TitleRu, e.TitleEn, e.DescriptionRu, e.DescriptionEn).Scan(&lessonID)
 		if err != nil {
 			return err
 		}
@@ -117,8 +117,8 @@ func SeedSamples(ctx context.Context, pool *pgxpool.Pool) error {
 			if err != nil {
 				return err
 			}
-			if _, err := tx.Exec(ctx, `INSERT INTO exam_tasks (exam_id, task_id, position) VALUES ($1, $2, $3)`,
-				examID, taskID, i+1); err != nil {
+			if _, err := tx.Exec(ctx, `INSERT INTO lesson_tasks (lesson_id, task_id, position) VALUES ($1, $2, $3)`,
+				lessonID, taskID, i+1); err != nil {
 				return err
 			}
 		}

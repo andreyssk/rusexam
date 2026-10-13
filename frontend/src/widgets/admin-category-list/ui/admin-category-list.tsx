@@ -67,7 +67,7 @@ function Categories({ courseId }: { courseId: number }) {
                   <div className="flex flex-wrap items-center gap-3">
                     <div className="min-w-0 flex-1">
                       <p className="font-extrabold">{pick(c.titleRu, c.titleEn)}</p>
-                      <p className="text-sm text-muted-foreground">{t('category.counts', { n: c.examsCount })}</p>
+                      <p className="text-sm text-muted-foreground">{t('category.counts', { n: c.lessonsCount })}</p>
                     </div>
                     <Button variant="outline" size="sm" onClick={() => setEditingId(c.id)}>
                       {t('admin.edit')}
@@ -79,7 +79,7 @@ function Categories({ courseId }: { courseId: number }) {
                       loading={del.isPending && del.variables === c.id}
                       disabled={del.isPending}
                       onClick={async () => {
-                        if (c.examsCount > 0) return toast.error(t('category.deleteBlocked'))
+                        if (c.lessonsCount > 0) return toast.error(t('category.deleteBlocked'))
                         if (await confirm({ message: t('category.deleteConfirm'), confirmLabel: t('admin.confirmDelete'), destructive: true })) del.mutate(c.id)
                       }}
                     >

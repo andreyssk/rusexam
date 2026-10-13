@@ -17,7 +17,7 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
   const { pathname } = useLocation()
 
   const items: NavItem[] = [
-    { to: '/admin', label: t('nav.exams'), icon: BookOpen, active: pathname === '/admin' || pathname.startsWith('/admin/exams') },
+    { to: '/admin', label: t('nav.lessons'), icon: BookOpen, active: pathname === '/admin' || pathname.startsWith('/admin/lessons') },
     { to: '/admin/categories', label: t('nav.categories'), icon: FolderTree },
     { to: '/admin/tasks', label: t('nav.tasks'), icon: ListChecks },
     { to: '/admin/assets', label: t('nav.assets'), icon: Paperclip },

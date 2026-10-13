@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Russian exam prep API
   version: 0.1.0
-  description: Practice exams for the Russian language, history and law test (RVP, residence permit, citizenship).
+  description: Practice lessons for the Russian language, history and law test (RVP, residence permit, citizenship).
 servers:
   - url: /api
 
@@ -21,8 +21,8 @@ components:
           schema: { $ref: '#/components/schemas/Error' }
 
   parameters:
-    ExamID:
-      name: examID
+    LessonID:
+      name: lessonID
       in: path
       required: true
       schema: { type: integer, format: int64 }
@@ -106,10 +106,14 @@ components:
     Preferences:
       description: The user's own settings; they follow the account to any device.
       type: object
-      required: [audioVolume, audioSpeed]
+      required: [audioVolume, audioSpeed, collapsedCategories]
       properties:
         audioVolume: { type: number, format: double, minimum: 0, maximum: 1 }
         audioSpeed: { type: number, format: double, minimum: 0.25, maximum: 4, description: Playback rate of task audio; 1 is normal. }
+        collapsedCategories:
+          type: array
+          items: { type: integer, format: int64 }
+          description: Lesson categories folded on the home page; 0 is the group of lessons without a category.
 
     Asset:
       description: A stored file (audio or image) that tasks can use.
@@ -141,24 +145,24 @@ components:
 
     Course:
       type: object
-      required: [id, titleRu, titleEn, flag, examsCount, tasksCount]
+      required: [id, titleRu, titleEn, flag, lessonsCount, tasksCount]
       properties:
         id: { type: integer, format: int64 }
         titleRu: { type: string }
         titleEn: { type: string }
         flag: { type: string, description: An emoji shown in the header course switcher, usually a flag. }
-        examsCount: { type: integer }
+        lessonsCount: { type: integer }
         tasksCount: { type: integer }
 
     Category:
       type: object
-      required: [id, courseId, titleRu, titleEn, examsCount]
+      required: [id, courseId, titleRu, titleEn, lessonsCount]
       properties:
         id: { type: integer, format: int64 }
         courseId: { type: integer, format: int64 }
         titleRu: { type: string }
         titleEn: { type: string }
-        examsCount: { type: integer }
+        lessonsCount: { type: integer }
 
     CategoryInput:
       type: object
@@ -199,7 +203,7 @@ components:
         correctIndex: { type: integer, minimum: 0 }
         explanation: { type: string }
 
-    ExamRef:
+    LessonRef:
       type: object
       required: [id, titleRu, titleEn]
       properties:
@@ -208,7 +212,7 @@ components:
         titleEn: { type: string }
 
     AdminTask:
-      description: A task together with the exams it is linked to. Tasks live in a bank and can be used by any number of exams.
+      description: A task together with the lessons it is linked to. Tasks live in a bank and can be used by any number of lessons.
       allOf:
         - $ref: '#/components/schemas/Task'
         - type: object
@@ -218,7 +222,7 @@ components:
             externalId: { type: string, nullable: true, description: The task's ID in another system. Admin-only; unique when set. }
             usedIn:
               type: array
-              items: { $ref: '#/components/schemas/ExamRef' }
+              items: { $ref: '#/components/schemas/LessonRef' }
 
     AdminUser:
       type: object
@@ -237,32 +241,32 @@ components:
       properties:
         allowSignups: { type: boolean }
 
-    ExamInput:
+    LessonInput:
       type: object
       properties:
         courseId:
           type: integer
           format: int64
-          description: Required when creating an exam; ignored on update (an exam never changes course).
+          description: Required when creating a lesson; ignored on update (a lesson never changes course).
         categoryId:
           type: integer
           format: int64
           nullable: true
-          description: The exam's category, which must belong to the exam's course; null = uncategorized.
+          description: The lesson's category, which must belong to the lesson's course; null = uncategorized.
         preserveOrder: { type: boolean, description: Sessions keep the task order instead of shuffling it. }
         titleRu: { type: string }
         titleEn: { type: string }
         descriptionRu: { type: string }
         descriptionEn: { type: string }
 
-    ExamStats:
+    LessonStats:
       type: object
       required: [attemptsCount, avgScore]
       properties:
         attemptsCount: { type: integer }
         avgScore: { type: number, format: double, nullable: true, description: Average score percent over all completed attempts. }
 
-    MyExamStats:
+    MyLessonStats:
       type: object
       required: [attemptsCount, bestScore, lastScore]
       properties:
@@ -270,36 +274,36 @@ components:
         bestScore: { type: number, format: double, nullable: true }
         lastScore: { type: number, format: double, nullable: true }
 
-    ExamStatus:
+    LessonStatus:
       type: string
       enum: [pending, approved]
-      description: New exams are pending until an admin approves them; learners only see approved exams.
+      description: New lessons are pending until an admin approves them; learners only see approved lessons.
 
-    Exam:
+    Lesson:
       type: object
       required: [id, courseId, categoryId, status, preserveOrder, titleRu, titleEn, descriptionRu, descriptionEn, tasksCount, stats]
       properties:
         id: { type: integer, format: int64 }
         courseId: { type: integer, format: int64 }
         categoryId: { type: integer, format: int64, nullable: true }
-        status: { $ref: '#/components/schemas/ExamStatus' }
+        status: { $ref: '#/components/schemas/LessonStatus' }
         preserveOrder: { type: boolean }
         titleRu: { type: string }
         titleEn: { type: string }
         descriptionRu: { type: string }
         descriptionEn: { type: string }
         tasksCount: { type: integer }
-        stats: { $ref: '#/components/schemas/ExamStats' }
-        myStats: { $ref: '#/components/schemas/MyExamStats' }
+        stats: { $ref: '#/components/schemas/LessonStats' }
+        myStats: { $ref: '#/components/schemas/MyLessonStats' }
 
     Attempt:
       type: object
-      required: [id, examId, examTitleRu, examTitleEn, mode, status, startedAt, preserveOrder]
+      required: [id, lessonId, lessonTitleRu, lessonTitleEn, mode, status, startedAt, preserveOrder]
       properties:
         id: { type: integer, format: int64 }
-        examId: { type: integer, format: int64 }
-        examTitleRu: { type: string }
-        examTitleEn: { type: string }
+        lessonId: { type: integer, format: int64 }
+        lessonTitleRu: { type: string }
+        lessonTitleEn: { type: string }
         mode: { $ref: '#/components/schemas/Mode' }
         status: { type: string, enum: [in_progress, completed] }
         startedAt: { type: string, format: date-time }
@@ -308,7 +312,7 @@ components:
         correctCount: { type: integer, nullable: true }
         totalCount: { type: integer, nullable: true }
         scorePercent: { type: number, format: double, nullable: true }
-        preserveOrder: { type: boolean, description: "The exam's setting: the session must not shuffle its tasks." }
+        preserveOrder: { type: boolean, description: "The lesson's setting: the session must not shuffle its tasks." }
 
     Streak:
       type: object
@@ -481,7 +485,7 @@ paths:
   /courses:
     get:
       operationId: listCourses
-      description: Public. Every course with how many exams and tasks it holds.
+      description: Public. Every course with how many lessons and tasks it holds.
       responses:
         '200':
           description: OK
@@ -492,14 +496,14 @@ paths:
                 items: { $ref: '#/components/schemas/Course' }
         default: { $ref: '#/components/responses/Error' }
 
-  /exams:
+  /lessons:
     get:
-      operationId: listExams
-      description: Public. When a bearer token is sent, each exam also carries the caller's personal stats.
+      operationId: listLessons
+      description: Public. When a bearer token is sent, each lesson also carries the caller's personal stats.
       parameters:
         - name: courseId
           in: query
-          description: Only the exams of this course.
+          description: Only the lessons of this course.
           schema: { type: integer, format: int64 }
       responses:
         '200':
@@ -508,25 +512,25 @@ paths:
             application/json:
               schema:
                 type: array
-                items: { $ref: '#/components/schemas/Exam' }
+                items: { $ref: '#/components/schemas/Lesson' }
         default: { $ref: '#/components/responses/Error' }
 
-  /exams/{examID}:
+  /lessons/{lessonID}:
     parameters:
-      - $ref: '#/components/parameters/ExamID'
+      - $ref: '#/components/parameters/LessonID'
     get:
-      operationId: getExam
+      operationId: getLesson
       responses:
         '200':
           description: OK
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/Exam' }
+              schema: { $ref: '#/components/schemas/Lesson' }
         default: { $ref: '#/components/responses/Error' }
 
-  /exams/{examID}/attempts:
+  /lessons/{lessonID}/attempts:
     parameters:
-      - $ref: '#/components/parameters/ExamID'
+      - $ref: '#/components/parameters/LessonID'
     post:
       operationId: startAttempt
       security: [{ bearer: [] }]
@@ -677,7 +681,7 @@ paths:
         default: { $ref: '#/components/responses/Error' }
     delete:
       operationId: adminDeleteCategory
-      description: Fails with 409 while the category still has exams.
+      description: Fails with 409 while the category still has lessons.
       security: [{ bearer: [] }]
       responses:
         '204': { description: Deleted }
@@ -720,60 +724,60 @@ paths:
         default: { $ref: '#/components/responses/Error' }
     delete:
       operationId: adminDeleteCourse
-      description: Fails with 409 while the course still has exams or tasks.
+      description: Fails with 409 while the course still has lessons or tasks.
       security: [{ bearer: [] }]
       responses:
         '204': { description: Deleted }
         default: { $ref: '#/components/responses/Error' }
 
-  /admin/exams:
+  /admin/lessons:
     post:
-      operationId: adminCreateExam
+      operationId: adminCreateLesson
       security: [{ bearer: [] }]
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/ExamInput' }
+            schema: { $ref: '#/components/schemas/LessonInput' }
       responses:
         '201':
           description: Created
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/Exam' }
+              schema: { $ref: '#/components/schemas/Lesson' }
         default: { $ref: '#/components/responses/Error' }
 
-  /admin/exams/{examID}:
+  /admin/lessons/{lessonID}:
     parameters:
-      - $ref: '#/components/parameters/ExamID'
+      - $ref: '#/components/parameters/LessonID'
     put:
-      operationId: adminUpdateExam
+      operationId: adminUpdateLesson
       security: [{ bearer: [] }]
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/ExamInput' }
+            schema: { $ref: '#/components/schemas/LessonInput' }
       responses:
         '200':
           description: OK
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/Exam' }
+              schema: { $ref: '#/components/schemas/Lesson' }
         default: { $ref: '#/components/responses/Error' }
     delete:
-      operationId: adminDeleteExam
+      operationId: adminDeleteLesson
       security: [{ bearer: [] }]
       responses:
         '204': { description: Deleted }
         default: { $ref: '#/components/responses/Error' }
 
-  /admin/exams/{examID}/status:
+  /admin/lessons/{lessonID}/status:
     parameters:
-      - $ref: '#/components/parameters/ExamID'
+      - $ref: '#/components/parameters/LessonID'
     put:
-      operationId: adminSetExamStatus
-      description: Approves an exam (making it available to learners) or sends it back to pending.
+      operationId: adminSetLessonStatus
+      description: Approves a lesson (making it available to learners) or sends it back to pending.
       security: [{ bearer: [] }]
       requestBody:
         required: true
@@ -783,21 +787,21 @@ paths:
               type: object
               required: [status]
               properties:
-                status: { $ref: '#/components/schemas/ExamStatus' }
+                status: { $ref: '#/components/schemas/LessonStatus' }
       responses:
         '200':
           description: OK
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/Exam' }
+              schema: { $ref: '#/components/schemas/Lesson' }
         default: { $ref: '#/components/responses/Error' }
 
-  /admin/exams/{examID}/tasks:
+  /admin/lessons/{lessonID}/tasks:
     parameters:
-      - $ref: '#/components/parameters/ExamID'
+      - $ref: '#/components/parameters/LessonID'
     get:
-      operationId: adminListExamTasks
-      description: The exam's tasks in order, including answers.
+      operationId: adminListLessonTasks
+      description: The lesson's tasks in order, including answers.
       security: [{ bearer: [] }]
       responses:
         '200':
@@ -809,10 +813,10 @@ paths:
                 items: { $ref: '#/components/schemas/AdminTask' }
         default: { $ref: '#/components/responses/Error' }
     put:
-      operationId: adminSetExamTasks
+      operationId: adminSetLessonTasks
       description: >
-        Replaces the exam's task list. The order of taskIds is the order inside the exam, so this one call links,
-        unlinks and reorders. Every task must belong to the exam's course. The tasks themselves are not changed or deleted.
+        Replaces the lesson's task list. The order of taskIds is the order inside the lesson, so this one call links,
+        unlinks and reorders. Every task must belong to the lesson's course. The tasks themselves are not changed or deleted.
       security: [{ bearer: [] }]
       requestBody:
         required: true
@@ -847,7 +851,7 @@ paths:
           schema: { type: integer, format: int64 }
         - name: unassigned
           in: query
-          description: When true, only tasks that are not in any exam.
+          description: When true, only tasks that are not in any lesson.
           schema: { type: boolean }
         - name: q
           in: query
@@ -864,7 +868,7 @@ paths:
         default: { $ref: '#/components/responses/Error' }
     post:
       operationId: adminCreateTask
-      description: Creates a task in the bank. Link it to exams with PUT /admin/exams/{examID}/tasks.
+      description: Creates a task in the bank. Link it to lessons with PUT /admin/lessons/{lessonID}/tasks.
       security: [{ bearer: [] }]
       requestBody:
         required: true
@@ -884,8 +888,8 @@ paths:
       operationId: adminImportTasks
       description: >
         Creates many tasks at once, all or nothing: if any task is invalid, nothing is created and the error names
-        the offending tasks. The tasks are created in the course given by courseId. When examId is given the new
-        tasks are also appended to that exam, which must belong to the same course.
+        the offending tasks. The tasks are created in the course given by courseId. When lessonId is given the new
+        tasks are also appended to that lesson, which must belong to the same course.
       security: [{ bearer: [] }]
       requestBody:
         required: true
@@ -901,7 +905,7 @@ paths:
                   minItems: 1
                   maxItems: 500
                   items: { $ref: '#/components/schemas/TaskInput' }
-                examId: { type: integer, format: int64 }
+                lessonId: { type: integer, format: int64 }
       responses:
         '201':
           description: Created
@@ -918,9 +922,9 @@ paths:
     post:
       operationId: adminBulkTasks
       description: >
-        Applies one action to several bank tasks at once. delete removes them from the bank and every exam;
-        unlink removes them from every exam (they stay in the bank); link appends them to the exam given by examId,
-        skipping those already in it. The exam and all tasks must belong to the same course.
+        Applies one action to several bank tasks at once. delete removes them from the bank and every lesson;
+        unlink removes them from every lesson (they stay in the bank); link appends them to the lesson given by lessonId,
+        skipping those already in it. The lesson and all tasks must belong to the same course.
       security: [{ bearer: [] }]
       requestBody:
         required: true
@@ -934,7 +938,7 @@ paths:
                 taskIds:
                   type: array
                   items: { type: integer, format: int64 }
-                examId:
+                lessonId:
                   type: integer
                   format: int64
                   description: Required for link.
@@ -1030,7 +1034,7 @@ paths:
         default: { $ref: '#/components/responses/Error' }
     delete:
       operationId: adminDeleteTask
-      description: Deletes the task from the bank and from every exam that uses it.
+      description: Deletes the task from the bank and from every lesson that uses it.
       security: [{ bearer: [] }]
       responses:
         '204': { description: Deleted }
