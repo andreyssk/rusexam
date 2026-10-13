@@ -37,6 +37,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/tasks/{taskID}/audio": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                taskID: components["parameters"]["TaskID"];
+            };
+            cookie?: never;
+        };
+        /** @description The task's mp3. Supports range requests. 404 when the task has no audio. */
+        get: operations["getTaskAudio"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getPreferences"];
+        put: operations["updatePreferences"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me": {
         parameters: {
             query?: never;
@@ -350,6 +385,25 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/exams/{examID}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                examID: components["parameters"]["ExamID"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** @description Approves an exam (making it available to learners) or sends it back to pending. */
+        put: operations["adminSetExamStatus"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/exams/{examID}/tasks": {
         parameters: {
             query?: never;
@@ -417,6 +471,25 @@ export interface paths {
         /** @description Applies one action to several bank tasks at once. delete removes them from the bank and every exam; unlink removes them from every exam (they stay in the bank); link appends them to the exam given by examId, skipping those already in it. The exam and all tasks must belong to the same course. */
         post: operations["adminBulkTasks"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/tasks/{taskID}/audio": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                taskID: components["parameters"]["TaskID"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** @description Sets (or replaces) the task's audio. The body is the raw mp3, at most 5 MB. */
+        put: operations["adminSetTaskAudio"];
+        post?: never;
+        delete: operations["adminDeleteTaskAudio"];
         options?: never;
         head?: never;
         patch?: never;
@@ -537,8 +610,6 @@ export interface components {
             error: string;
         };
         /** @enum {string} */
-        Section: "vocabulary" | "grammar" | "reading" | "history" | "law";
-        /** @enum {string} */
         Mode: "training" | "exam";
         Credentials: {
             username: string;
@@ -559,7 +630,8 @@ export interface components {
         Task: {
             /** Format: int64 */
             id: number;
-            section: components["schemas"]["Section"];
+            /** @description The task has an mp3, served by GET /tasks/{taskID}/audio. */
+            hasAudio: boolean;
             /** @description Russian text of the question. */
             prompt: string;
             /** @description Optional Russian text to read. */
@@ -567,6 +639,16 @@ export interface components {
             options: string[];
             correctIndex?: number;
             explanation?: string;
+        };
+        /** @description The user's own settings; they follow the account to any device. */
+        Preferences: {
+            /** Format: double */
+            audioVolume: number;
+            /**
+             * Format: double
+             * @description Playback rate of task audio; 1 is normal.
+             */
+            audioSpeed: number;
         };
         Course: {
             /** Format: int64 */
@@ -607,7 +689,6 @@ export interface components {
              * @description Required when creating a task; ignored on update (a task never changes course).
              */
             courseId?: number;
-            section: components["schemas"]["Section"];
             prompt: string;
             passage?: string;
             options: string[];
@@ -671,6 +752,11 @@ export interface components {
             /** Format: double */
             lastScore: number | null;
         };
+        /**
+         * @description New exams are pending until an admin approves them; learners only see approved exams.
+         * @enum {string}
+         */
+        ExamStatus: "pending" | "approved";
         Exam: {
             /** Format: int64 */
             id: number;
@@ -678,14 +764,12 @@ export interface components {
             courseId: number;
             /** Format: int64 */
             categoryId: number | null;
+            status: components["schemas"]["ExamStatus"];
             titleRu: string;
             titleEn: string;
             descriptionRu: string;
             descriptionEn: string;
             tasksCount: number;
-            sections: {
-                [key: string]: number;
-            };
             stats: components["schemas"]["ExamStats"];
             myStats?: components["schemas"]["MyExamStats"];
         };
@@ -733,15 +817,9 @@ export interface components {
             selectedIndex: number | null;
             isCorrect: boolean;
         };
-        SectionScore: {
-            section: components["schemas"]["Section"];
-            correct: number;
-            total: number;
-        };
         Result: {
             attempt: components["schemas"]["Attempt"];
             items: components["schemas"]["ResultItem"][];
-            sections: components["schemas"]["SectionScore"][];
         };
     };
     responses: {
@@ -813,6 +891,75 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AuthResponse"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getTaskAudio: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                taskID: components["parameters"]["TaskID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "audio/mpeg": string;
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getPreferences: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Preferences"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    updatePreferences: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Preferences"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Preferences"];
                 };
             };
             default: components["responses"]["Error"];
@@ -1328,6 +1475,35 @@ export interface operations {
             default: components["responses"]["Error"];
         };
     };
+    adminSetExamStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                examID: components["parameters"]["ExamID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    status: components["schemas"]["ExamStatus"];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Exam"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
     adminListExamTasks: {
         parameters: {
             query?: never;
@@ -1385,7 +1561,6 @@ export interface operations {
             query?: {
                 /** @description Only the tasks of this course. */
                 courseId?: number;
-                section?: components["schemas"]["Section"];
                 /** @description When true, only tasks that are not in any exam. */
                 unassigned?: boolean;
                 /** @description Case-insensitive search in the question text. */
@@ -1500,6 +1675,54 @@ export interface operations {
                         affected: number;
                     };
                 };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    adminSetTaskAudio: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                taskID: components["parameters"]["TaskID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "audio/mpeg": string;
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminTask"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    adminDeleteTaskAudio: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                taskID: components["parameters"]["TaskID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             default: components["responses"]["Error"];
         };

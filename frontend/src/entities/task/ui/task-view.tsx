@@ -2,6 +2,7 @@ import { Check, X } from 'lucide-react'
 import type { Task } from '@/shared/api'
 import { cn } from '@/shared/lib/cn'
 import { useI18n } from '@/shared/lib/i18n'
+import { TaskAudio } from './task-audio'
 
 type Props = {
   task: Task
@@ -22,6 +23,8 @@ export function TaskView({ task, selectedIndex, correctIndex, disabled, onSelect
 
   return (
     <div className="space-y-4">
+      {task.hasAudio && <TaskAudio taskId={task.id} autoPlay />}
+
       {task.passage && (
         <figure className="rounded-2xl border-2 border-b-4 bg-muted p-4">
           <figcaption className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">

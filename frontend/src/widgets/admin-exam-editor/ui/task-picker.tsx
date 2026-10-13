@@ -1,10 +1,8 @@
 import { useDeferredValue, useState } from 'react'
-import { SECTIONS, type Section } from '@/shared/api'
 import { useI18n } from '@/shared/lib/i18n'
-import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent } from '@/shared/ui/card'
-import { Input, Select } from '@/shared/ui/input'
+import { Input } from '@/shared/ui/input'
 import { ErrorMessage, Loading } from '@/shared/ui/states'
 import { useBankTasks } from '@/features/manage-tasks'
 
@@ -23,11 +21,10 @@ export function TaskPicker({
   onClose: () => void
 }) {
   const { t } = useI18n()
-  const [section, setSection] = useState<Section | ''>('')
   const [search, setSearch] = useState('')
   const q = useDeferredValue(search.trim())
   const [selected, setSelected] = useState<Set<number>>(new Set())
-  const { data, isPending, error } = useBankTasks({ courseId, section, q })
+  const { data, isPending, error } = useBankTasks({ courseId, q })
 
   const available = (data ?? []).filter((task) => !excludeIds.has(task.id))
   const toggle = (id: number) =>
@@ -48,14 +45,6 @@ export function TaskPicker({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-          <Select className="w-auto" aria-label={t('admin.section')} value={section} onChange={(e) => setSection(e.target.value as Section | '')}>
-            <option value="">{t('common.allSections')}</option>
-            {SECTIONS.map((s) => (
-              <option key={s} value={s}>
-                {t(`section.${s}`)}
-              </option>
-            ))}
-          </Select>
         </div>
 
         {isPending ? (
@@ -70,7 +59,6 @@ export function TaskPicker({
               <li key={task.id}>
                 <label className="flex cursor-pointer items-center gap-3 rounded-xl border-2 px-3 py-2 hover:bg-muted">
                   <input type="checkbox" checked={selected.has(task.id)} onChange={() => toggle(task.id)} className="h-4 w-4 accent-[var(--primary)]" />
-                  <Badge>{t(`section.${task.section}`)}</Badge>
                   <span lang="ru" translate="no" className="min-w-0 flex-1 truncate text-sm">
                     {task.prompt}
                   </span>

@@ -1,9 +1,8 @@
 import { Download, Plus, Upload } from 'lucide-react'
 import { useDeferredValue, useState } from 'react'
-import { SECTIONS, type AdminTask, type Section } from '@/shared/api'
+import type { AdminTask } from '@/shared/api'
 import { useI18n } from '@/shared/lib/i18n'
 import { useConfirm } from '@/shared/ui/confirm'
-import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Input, Select } from '@/shared/ui/input'
@@ -17,13 +16,12 @@ type Editing = { kind: 'new' } | { kind: 'edit'; task: AdminTask } | null
 function TaskBank({ courseId }: { courseId: number }) {
   const { t, pick } = useI18n()
   const confirm = useConfirm()
-  const [section, setSection] = useState<Section | ''>('')
   const [unassigned, setUnassigned] = useState(false)
   const [search, setSearch] = useState('')
   const q = useDeferredValue(search.trim())
   const [editing, setEditing] = useState<Editing>(null)
   const [importing, setImporting] = useState(false)
-  const { data, isPending, error } = useBankTasks({ courseId, section, q, unassigned })
+  const { data, isPending, error } = useBankTasks({ courseId, q, unassigned })
   const create = useCreateTask()
   const update = useUpdateTask()
   const del = useDeleteTask()
@@ -54,7 +52,7 @@ function TaskBank({ courseId }: { courseId: number }) {
             <Button variant="outline" onClick={() => setImporting(true)}>
               <Upload size={16} /> {t('admin.import')}
             </Button>
-            <Button variant="outline" loading={exportTasks.isPending} onClick={() => exportTasks.mutate(courseId)}>
+            <Button variant="outline" loading={exportTasks.isPending} onClick={() => exportTasks.mutate({ courseId })}>
               <Download size={16} /> {t('admin.export')}
             </Button>
             <Button onClick={() => setEditing({ kind: 'new' })}>
@@ -80,10 +78,10 @@ function TaskBank({ courseId }: { courseId: number }) {
               initial={editing.kind === 'edit' ? editing.task : undefined}
               pending={create.isPending || update.isPending}
               onCancel={close}
-              onSubmit={(body) =>
+              onSubmit={(body, audio) =>
                 editing.kind === 'new'
-                  ? create.mutate({ ...body, courseId }, { onSuccess: close })
-                  : update.mutate({ id: editing.task.id, body }, { onSuccess: close })
+                  ? create.mutate({ body: { ...body, courseId }, audio }, { onSuccess: close })
+                  : update.mutate({ id: editing.task.id, body, audio }, { onSuccess: close })
               }
             />
           </CardContent>
@@ -92,14 +90,6 @@ function TaskBank({ courseId }: { courseId: number }) {
 
       <div className="flex flex-wrap gap-2">
         <Input className="min-w-48 flex-1" placeholder={t('common.search')} aria-label={t('common.search')} value={search} onChange={(e) => setSearch(e.target.value)} />
-        <Select className="w-auto" aria-label={t('admin.section')} value={section} onChange={(e) => setSection(e.target.value as Section | '')}>
-          <option value="">{t('common.allSections')}</option>
-          {SECTIONS.map((s) => (
-            <option key={s} value={s}>
-              {t(`section.${s}`)}
-            </option>
-          ))}
-        </Select>
         <label className="flex h-11 cursor-pointer items-center gap-2 rounded-2xl border-2 bg-muted px-4 text-sm font-bold">
           <input type="checkbox" className="size-4 accent-[var(--primary)]" checked={unassigned} onChange={(e) => setUnassigned(e.target.checked)} />
           {t('admin.onlyUnassigned')}
@@ -177,7 +167,6 @@ function TaskBank({ courseId }: { courseId: number }) {
                     checked={selected.has(task.id)}
                     onChange={() => toggle(task.id)}
                   />
-                  <Badge>{t(`section.${task.section}`)}</Badge>
                   <div className="min-w-0 flex-1 basis-56">
                     <p lang="ru" translate="no" className="truncate text-sm" title={task.prompt}>
                       {task.prompt}

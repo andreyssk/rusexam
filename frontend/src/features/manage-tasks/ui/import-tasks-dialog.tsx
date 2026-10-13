@@ -1,6 +1,6 @@
 import { Download, Upload } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { SECTIONS, type TaskInput } from '@/shared/api'
+import type { TaskInput } from '@/shared/api'
 import { useI18n } from '@/shared/lib/i18n'
 import { Button } from '@/shared/ui/button'
 import { Label, Select, Textarea } from '@/shared/ui/input'
@@ -11,7 +11,6 @@ import { useImportTasks } from '../api/hooks'
 
 const EXAMPLE: TaskInput[] = [
   {
-    section: 'grammar',
     prompt: 'Выберите правильную форму: Я живу в ___ (Москва).',
     passage: '',
     options: ['Москва', 'Москвы', 'Москве', 'Москвой'],
@@ -19,7 +18,6 @@ const EXAMPLE: TaskInput[] = [
     explanation: 'После «в» на вопрос «где?» нужен предложный падеж: в Москве.',
   },
   {
-    section: 'history',
     prompt: 'Кто первым полетел в космос?',
     passage: '',
     options: ['Юрий Гагарин', 'Герман Титов', 'Алексей Леонов'],
@@ -36,7 +34,14 @@ function parseTasks(text: string): TaskInput[] {
   return list as TaskInput[]
 }
 
-export function ImportTasksDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+type DialogProps = {
+  open: boolean
+  onClose: () => void
+  /** Import straight into this exam (of `courseId`): the new tasks are appended to it and the exam picker is hidden. */
+  target?: { examId: number; courseId: number }
+}
+
+export function ImportTasksDialog({ open, onClose, target }: DialogProps) {
   const { t, pick } = useI18n()
   const dialog = useRef<HTMLDialogElement>(null)
   const fileInput = useRef<HTMLInputElement>(null)
@@ -105,7 +110,7 @@ export function ImportTasksDialog({ open, onClose }: { open: boolean; onClose: (
           <h2 id="import-title" className="text-lg font-extrabold">
             {t('admin.importTitle')}
           </h2>
-          <p className="text-sm text-muted-foreground">{t('admin.importHint', { sections: SECTIONS.join(', ') })}</p>
+          <p className="text-sm text-muted-foreground">{t('admin.importHint')}</p>
 
           <div className="flex flex-wrap items-center gap-2">
             <input
@@ -133,7 +138,7 @@ export function ImportTasksDialog({ open, onClose }: { open: boolean; onClose: (
               spellCheck={false}
               rows={8}
               className="font-mono text-sm"
-              placeholder={'[\n  { "section": "grammar", "prompt": "…", "options": ["…", "…"], "correctIndex": 0 }\n]'}
+              placeholder={'[\n  { "prompt": "…", "options": ["…", "…"], "correctIndex": 0 }\n]'}
               value={text}
               onChange={(e) => {
                 imp.reset()
@@ -146,6 +151,7 @@ export function ImportTasksDialog({ open, onClose }: { open: boolean; onClose: (
           {parsed.bad && <ErrorMessage message={t('admin.importBadFile')} />}
           {tasks && <p className="text-sm font-bold">{t('admin.importFound', { n: tasks.length })}</p>}
 
+          {!target && (
           <div>
             <Label htmlFor="import-exam">{t('admin.importLink')}</Label>
             <Select id="import-exam" value={examId} onChange={(e) => setExamId(e.target.value)}>
@@ -157,6 +163,7 @@ export function ImportTasksDialog({ open, onClose }: { open: boolean; onClose: (
               ))}
             </Select>
           </div>
+          )}
 
           {imp.isError && <ErrorMessage error={imp.error} />}
 
@@ -167,7 +174,11 @@ export function ImportTasksDialog({ open, onClose }: { open: boolean; onClose: (
             <Button
               loading={imp.isPending}
               disabled={!tasks || tasks.length === 0}
-              onClick={() => tasks && course && imp.mutate({ courseId: course.id, tasks, examId: examId ? Number(examId) : undefined }, { onSuccess: onClose })}
+              onClick={() => {
+                const courseId = target?.courseId ?? course?.id
+                const exam = target?.examId ?? (examId ? Number(examId) : undefined)
+                if (tasks && courseId) imp.mutate({ courseId, tasks, examId: exam }, { onSuccess: onClose })
+              }}
             >
               {t('admin.importRun')}
             </Button>

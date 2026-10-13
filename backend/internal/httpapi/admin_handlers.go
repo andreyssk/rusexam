@@ -21,9 +21,6 @@ func validateExam(in *ExamInput) string {
 }
 
 func validateTask(in *TaskInput) string {
-	if !sections[in.Section] {
-		return "unknown section"
-	}
 	in.Prompt, in.Passage, in.Explanation = strings.TrimSpace(in.Prompt), strings.TrimSpace(in.Passage), strings.TrimSpace(in.Explanation)
 	if in.Prompt == "" {
 		return "a prompt is required"
@@ -62,7 +59,7 @@ func (s *Server) adminCreateExam(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
-	exams, err := queryExams(r.Context(), s.pool, 0, &id, nil)
+	exams, err := queryExams(r.Context(), s.pool, 0, &id, nil, false)
 	if err != nil || len(exams) == 0 {
 		fail(w, err)
 		return
@@ -105,7 +102,40 @@ func (s *Server) adminUpdateExam(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "exam not found")
 		return
 	}
-	exams, err := queryExams(r.Context(), s.pool, 0, &id, nil)
+	exams, err := queryExams(r.Context(), s.pool, 0, &id, nil, false)
+	if err != nil || len(exams) == 0 {
+		fail(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, exams[0])
+}
+
+// adminSetExamStatus approves an exam (making it available to learners) or sends it back to pending.
+func (s *Server) adminSetExamStatus(w http.ResponseWriter, r *http.Request) {
+	id, ok := pathID(w, r, "examID")
+	if !ok {
+		return
+	}
+	var in struct {
+		Status string `json:"status"`
+	}
+	if !readJSON(w, r, &in) {
+		return
+	}
+	if in.Status != "pending" && in.Status != "approved" {
+		writeError(w, http.StatusBadRequest, "status must be 'pending' or 'approved'")
+		return
+	}
+	tag, err := s.pool.Exec(r.Context(), `UPDATE exams SET status = $2, updated_at = now() WHERE id = $1`, id, in.Status)
+	if err != nil {
+		fail(w, err)
+		return
+	}
+	if tag.RowsAffected() == 0 {
+		writeError(w, http.StatusNotFound, "exam not found")
+		return
+	}
+	exams, err := queryExams(r.Context(), s.pool, 0, &id, nil, false)
 	if err != nil || len(exams) == 0 {
 		fail(w, err)
 		return
@@ -133,11 +163,6 @@ func (s *Server) adminDeleteExam(w http.ResponseWriter, r *http.Request) {
 // ---- task bank ----
 
 func (s *Server) adminListBankTasks(w http.ResponseWriter, r *http.Request) {
-	section := r.URL.Query().Get("section")
-	if section != "" && !sections[section] {
-		writeError(w, http.StatusBadRequest, "unknown section")
-		return
-	}
 	var courseID *int64
 	if v := r.URL.Query().Get("courseId"); v != "" {
 		id, err := strconv.ParseInt(v, 10, 64)
@@ -147,7 +172,7 @@ func (s *Server) adminListBankTasks(w http.ResponseWriter, r *http.Request) {
 		}
 		courseID = &id
 	}
-	tasks, err := adminBankTasks(r.Context(), s.pool, courseID, section, strings.TrimSpace(r.URL.Query().Get("q")), r.URL.Query().Get("unassigned") == "true")
+	tasks, err := adminBankTasks(r.Context(), s.pool, courseID, strings.TrimSpace(r.URL.Query().Get("q")), r.URL.Query().Get("unassigned") == "true")
 	if err != nil {
 		fail(w, err)
 		return
@@ -169,9 +194,9 @@ func (s *Server) adminCreateTask(w http.ResponseWriter, r *http.Request) {
 	}
 	var id int64
 	err := s.pool.QueryRow(r.Context(), `
-		INSERT INTO tasks (course_id, section, prompt, passage, options, correct_index, explanation)
-		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
-		in.CourseID, in.Section, in.Prompt, in.Passage, in.Options, in.CorrectIndex, in.Explanation).Scan(&id)
+		INSERT INTO tasks (course_id, prompt, passage, options, correct_index, explanation)
+		VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+		in.CourseID, in.Prompt, in.Passage, in.Options, in.CorrectIndex, in.Explanation).Scan(&id)
 	if err != nil {
 		fail(w, err)
 		return
@@ -193,9 +218,9 @@ func (s *Server) adminUpdateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	tag, err := s.pool.Exec(r.Context(), `
-		UPDATE tasks SET section = $2, prompt = $3, passage = $4, options = $5, correct_index = $6, explanation = $7
+		UPDATE tasks SET prompt = $2, passage = $3, options = $4, correct_index = $5, explanation = $6
 		WHERE id = $1`,
-		id, in.Section, in.Prompt, in.Passage, in.Options, in.CorrectIndex, in.Explanation)
+		id, in.Prompt, in.Passage, in.Options, in.CorrectIndex, in.Explanation)
 	if err != nil {
 		fail(w, err)
 		return
@@ -483,9 +508,9 @@ func (s *Server) adminImportTasks(w http.ResponseWriter, r *http.Request) {
 	for _, t := range in.Tasks {
 		var id int64
 		if err := tx.QueryRow(ctx, `
-			INSERT INTO tasks (course_id, section, prompt, passage, options, correct_index, explanation)
-			VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
-			in.CourseID, t.Section, t.Prompt, t.Passage, t.Options, t.CorrectIndex, t.Explanation).Scan(&id); err != nil {
+			INSERT INTO tasks (course_id, prompt, passage, options, correct_index, explanation)
+			VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+			in.CourseID, t.Prompt, t.Passage, t.Options, t.CorrectIndex, t.Explanation).Scan(&id); err != nil {
 			fail(w, err)
 			return
 		}

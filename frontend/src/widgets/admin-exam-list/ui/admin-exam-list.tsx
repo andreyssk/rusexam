@@ -8,8 +8,8 @@ import { Card, CardContent } from '@/shared/ui/card'
 import { ErrorMessage, Loading } from '@/shared/ui/states'
 import { groupExams, useCategories } from '@/entities/category'
 import { CourseGate } from '@/entities/course'
-import { useExams } from '@/entities/exam'
-import { ExamForm, useCreateExam, useDeleteExam } from '@/features/manage-exams'
+import { ExamStatusBadge, useExams } from '@/entities/exam'
+import { ExamForm, ExamStatusButton, useCreateExam, useDeleteExam } from '@/features/manage-exams'
 
 function Exams({ courseId }: { courseId: number }) {
   const { t, pick } = useI18n()
@@ -68,10 +68,12 @@ function Exams({ courseId }: { courseId: number }) {
                       <Link to={`/admin/exams/${exam.id}`} className="font-extrabold hover:underline">
                         {pick(exam.titleRu, exam.titleEn)}
                       </Link>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="mt-0.5 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                        <ExamStatusBadge status={exam.status} />
                         {t('exam.tasks', { n: exam.tasksCount })}
                       </p>
                     </div>
+                    <ExamStatusButton exam={exam} />
                     <Button variant="outline" size="sm" asChild>
                       <Link to={`/admin/exams/${exam.id}`}>{t('admin.edit')}</Link>
                     </Button>

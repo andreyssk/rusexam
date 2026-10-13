@@ -52,6 +52,9 @@ func New(pool *pgxpool.Pool, tokens *auth.Tokens, cookieSecure bool) http.Handle
 		r.Group(func(r chi.Router) {
 			r.Use(s.requireAuth)
 			r.Get("/me", s.me)
+			r.Get("/me/preferences", s.getPreferences)
+			r.Put("/me/preferences", s.updatePreferences)
+			r.Get("/tasks/{taskID}/audio", s.getTaskAudio)
 
 			// Taking exams is for learners only; admins manage content and users.
 			r.Group(func(r chi.Router) {
@@ -78,6 +81,7 @@ func New(pool *pgxpool.Pool, tokens *auth.Tokens, cookieSecure bool) http.Handle
 
 			r.Post("/exams", s.adminCreateExam)
 			r.Put("/exams/{examID}", s.adminUpdateExam)
+			r.Put("/exams/{examID}/status", s.adminSetExamStatus)
 			r.Delete("/exams/{examID}", s.adminDeleteExam)
 			r.Get("/exams/{examID}/tasks", s.adminListExamTasks)
 			r.Put("/exams/{examID}/tasks", s.adminSetExamTasks)
@@ -87,6 +91,8 @@ func New(pool *pgxpool.Pool, tokens *auth.Tokens, cookieSecure bool) http.Handle
 			r.Post("/tasks/bulk", s.adminBulkTasks)
 			r.Post("/tasks/import", s.adminImportTasks)
 			r.Put("/tasks/{taskID}", s.adminUpdateTask)
+			r.Put("/tasks/{taskID}/audio", s.adminSetTaskAudio)
+			r.Delete("/tasks/{taskID}/audio", s.adminDeleteTaskAudio)
 			r.Delete("/tasks/{taskID}", s.adminDeleteTask)
 
 			r.Get("/users", s.adminListUsers)

@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { api, unwrap, type ExamInput } from '@/shared/api'
+import { api, unwrap, type ExamInput, type ExamStatus } from '@/shared/api'
 import { useErrorText } from '@/shared/lib/error-text'
 import { useI18n } from '@/shared/lib/i18n'
 import { useToast } from '@/shared/ui/toast'
@@ -55,6 +55,20 @@ export function useDeleteExam() {
     onSuccess: () => {
       h.refresh()
       h.ok('toast.examDeleted')
+    },
+    onError: h.fail,
+  })
+}
+
+/** Approves an exam so learners can see it, or sends it back to pending. */
+export function useSetExamStatus() {
+  const h = useExamMutationHelpers()
+  return useMutation({
+    mutationFn: ({ examId, status }: { examId: number; status: ExamStatus }) =>
+      unwrap(api.PUT('/admin/exams/{examID}/status', { params: { path: { examID: examId } }, body: { status } })),
+    onSuccess: (_, v) => {
+      h.refresh()
+      h.ok(v.status === 'approved' ? 'toast.examApproved' : 'toast.examUnapproved')
     },
     onError: h.fail,
   })

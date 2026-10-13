@@ -1,19 +1,22 @@
-import { ArrowDown, ArrowUp, Library, Plus, Unlink } from 'lucide-react'
+import { ArrowDown, ArrowUp, ChevronDown, Download, Library, Plus, Unlink, Upload } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import type { AdminTask } from '@/shared/api'
+import { cn } from '@/shared/lib/cn'
 import { useI18n } from '@/shared/lib/i18n'
 import { useConfirm } from '@/shared/ui/confirm'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { ErrorMessage, Loading } from '@/shared/ui/states'
-import { useExam } from '@/entities/exam'
-import { ExamForm, useDeleteExam, useUpdateExam } from '@/features/manage-exams'
+import { ExamStatusBadge, useExam } from '@/entities/exam'
+import { ExamForm, ExamStatusButton, useDeleteExam, useUpdateExam } from '@/features/manage-exams'
 import {
+  ImportTasksDialog,
   TaskForm,
   useCreateAndLinkTask,
   useExamTasks,
+  useExportTasks,
   useSetExamTasks,
   useUpdateTask,
 } from '@/features/manage-tasks'
@@ -33,7 +36,17 @@ export function AdminExamEditor({ examId }: { examId: number }) {
   const createAndLink = useCreateAndLinkTask(examId)
   const updateTask = useUpdateTask()
   const [panel, setPanel] = useState<Panel>(null)
+  const exportTasks = useExportTasks()
+  const [importing, setImporting] = useState(false)
   const [unlinkingId, setUnlinkingId] = useState<number | null>(null)
+  // Tasks unfolded to show their answer options and explanation.
+  const [open, setOpen] = useState<Set<number>>(new Set())
+  const toggleOpen = (id: number) =>
+    setOpen((s) => {
+      const n = new Set(s)
+      if (!n.delete(id)) n.add(id)
+      return n
+    })
 
   if (exam.isPending || tasks.isPending) return <Loading />
   if (exam.error || tasks.error) return <ErrorMessage error={exam.error ?? tasks.error} />
@@ -62,6 +75,10 @@ export function AdminExamEditor({ examId }: { examId: number }) {
         <Button variant="ghost" size="sm" asChild>
           <Link to="/admin">← {t('admin.back')}</Link>
         </Button>
+        <div className="ml-auto flex items-center gap-2">
+          <ExamStatusBadge status={exam.data.status} />
+          <ExamStatusButton exam={exam.data} />
+        </div>
         <Button
           variant="ghost"
           size="sm"
@@ -75,6 +92,8 @@ export function AdminExamEditor({ examId }: { examId: number }) {
           {t('admin.delete')}
         </Button>
       </div>
+
+      {exam.data.status === 'pending' && <p className="rounded-2xl bg-accent-soft p-3 text-sm font-bold text-accent">{t('admin.pendingHint')}</p>}
 
       <Card>
         <CardHeader>
@@ -99,6 +118,17 @@ export function AdminExamEditor({ examId }: { examId: number }) {
           </h2>
           {!panel && (
             <div className="flex flex-wrap gap-2">
+              <Button variant="outline" onClick={() => setImporting(true)}>
+                <Upload size={16} /> {t('admin.import')}
+              </Button>
+              <Button
+                variant="outline"
+                loading={exportTasks.isPending}
+                disabled={list.length === 0}
+                onClick={() => exportTasks.mutate({ courseId: exam.data.courseId, examId })}
+              >
+                <Download size={16} /> {t('admin.export')}
+              </Button>
               <Button variant="outline" onClick={() => setPanel({ kind: 'picker' })}>
                 <Library size={16} /> {t('admin.addFromBank')}
               </Button>
@@ -108,6 +138,8 @@ export function AdminExamEditor({ examId }: { examId: number }) {
             </div>
           )}
         </div>
+
+        <ImportTasksDialog open={importing} onClose={() => setImporting(false)} target={{ examId, courseId: exam.data.courseId }} />
 
         {panel?.kind === 'picker' && (
           <TaskPicker
@@ -128,7 +160,7 @@ export function AdminExamEditor({ examId }: { examId: number }) {
               <TaskForm
                 pending={createAndLink.isPending}
                 onCancel={close}
-                onSubmit={(body) => createAndLink.mutate({ body: { ...body, courseId: exam.data.courseId }, currentIds: ids }, { onSuccess: close })}
+                onSubmit={(body, audio) => createAndLink.mutate({ body: { ...body, courseId: exam.data.courseId }, currentIds: ids, audio }, { onSuccess: close })}
               />
             </CardContent>
           </Card>
@@ -148,7 +180,7 @@ export function AdminExamEditor({ examId }: { examId: number }) {
                 initial={panel.task}
                 pending={updateTask.isPending}
                 onCancel={close}
-                onSubmit={(body) => updateTask.mutate({ id: panel.task.id, body }, { onSuccess: close })}
+                onSubmit={(body, audio) => updateTask.mutate({ id: panel.task.id, body, audio }, { onSuccess: close })}
               />
             </CardContent>
           </Card>
@@ -161,8 +193,17 @@ export function AdminExamEditor({ examId }: { examId: number }) {
             <li key={task.id}>
               <Card>
                 <CardContent className="flex flex-wrap items-center gap-3 py-3">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-expanded={open.has(task.id)}
+                    aria-label={open.has(task.id) ? t('admin.hideTask') : t('admin.showTask')}
+                    title={open.has(task.id) ? t('admin.hideTask') : t('admin.showTask')}
+                    onClick={() => toggleOpen(task.id)}
+                  >
+                    <ChevronDown size={16} className={cn('transition-transform', open.has(task.id) && 'rotate-180')} />
+                  </Button>
                   <span className="w-6 text-sm text-muted-foreground tabular-nums">{i + 1}</span>
-                  <Badge>{t(`section.${task.section}`)}</Badge>
                   <p lang="ru" translate="no" className="min-w-0 flex-1 basis-48 truncate text-sm" title={task.prompt}>
                     {task.prompt}
                   </p>
@@ -189,6 +230,24 @@ export function AdminExamEditor({ examId }: { examId: number }) {
                       <Unlink size={16} />
                     </Button>
                   </div>
+                  {open.has(task.id) && (
+                    <div className="basis-full space-y-1.5 border-t-2 pt-3 text-xs">
+                      {task.passage && <p lang="ru" translate="no" className="text-muted-foreground">{task.passage}</p>}
+                      <ol className="space-y-0.5" lang="ru" translate="no">
+                        {task.options.map((opt, oi) => (
+                          <li key={oi} className={cn(oi === task.correctIndex ? 'font-bold text-success' : 'text-muted-foreground')}>
+                            {'ABCDEFGH'[oi]}. {opt}
+                          </li>
+                        ))}
+                      </ol>
+                      {task.explanation && (
+                        <p lang="ru" translate="no" className="text-muted-foreground">
+                          <span className="font-bold">{t('run.explanation')}: </span>
+                          {task.explanation}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </li>

@@ -314,7 +314,7 @@ function Runner({ attemptId, data }: { attemptId: number; data: AttemptState }) 
       <Card className="max-md:rounded-none max-md:border-0 max-md:bg-transparent">
         <CardContent className="space-y-5 pt-5 max-md:p-0">
           <p className="text-sm text-muted-foreground">
-            {isRepeat ? t('run.repeat') : t('run.question', { i: pos + 1, n: total })} · {t(`section.${task.section}`)}
+            {isRepeat ? t('run.repeat') : t('run.question', { i: pos + 1, n: total })}
           </p>
 
           <TaskView

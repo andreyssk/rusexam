@@ -2,18 +2,17 @@ package httpapi
 
 import "time"
 
-var sections = map[string]bool{"vocabulary": true, "grammar": true, "reading": true, "history": true, "law": true}
-
 // Task is used for both public and admin views. Answer-revealing fields are
 // pointers/omitempty and are cleared for public views until allowed.
 type Task struct {
 	ID           int64    `json:"id"`
-	Section      string   `json:"section"`
 	Prompt       string   `json:"prompt"`
 	Passage      string   `json:"passage,omitempty"`
 	Options      []string `json:"options"`
 	CorrectIndex *int     `json:"correctIndex,omitempty"`
 	Explanation  string   `json:"explanation,omitempty"`
+	// HasAudio: the task has an mp3, served by GET /tasks/{taskID}/audio.
+	HasAudio bool `json:"hasAudio"`
 }
 
 type ExamRef struct {
@@ -70,7 +69,6 @@ type CourseInput struct {
 // TaskInput.CourseID is required when a task is created and ignored on update: a task never changes course.
 type TaskInput struct {
 	CourseID     int64    `json:"courseId"`
-	Section      string   `json:"section"`
 	Prompt       string   `json:"prompt"`
 	Passage      string   `json:"passage"`
 	Options      []string `json:"options"`
@@ -100,17 +98,18 @@ type MyExamStats struct {
 }
 
 type Exam struct {
-	ID            int64          `json:"id"`
-	CourseID      int64          `json:"courseId"`
-	CategoryID    *int64         `json:"categoryId"`
-	TitleRu       string         `json:"titleRu"`
-	TitleEn       string         `json:"titleEn"`
-	DescriptionRu string         `json:"descriptionRu"`
-	DescriptionEn string         `json:"descriptionEn"`
-	TasksCount    int            `json:"tasksCount"`
-	Sections      map[string]int `json:"sections"`
-	Stats         ExamStats      `json:"stats"`
-	MyStats       *MyExamStats   `json:"myStats,omitempty"`
+	ID         int64  `json:"id"`
+	CourseID   int64  `json:"courseId"`
+	CategoryID *int64 `json:"categoryId"`
+	// Status is "pending" until an admin approves the exam; learners only see approved exams.
+	Status        string       `json:"status"`
+	TitleRu       string       `json:"titleRu"`
+	TitleEn       string       `json:"titleEn"`
+	DescriptionRu string       `json:"descriptionRu"`
+	DescriptionEn string       `json:"descriptionEn"`
+	TasksCount    int          `json:"tasksCount"`
+	Stats         ExamStats    `json:"stats"`
+	MyStats       *MyExamStats `json:"myStats,omitempty"`
 }
 
 type Attempt struct {
@@ -148,16 +147,9 @@ type ResultItem struct {
 	IsCorrect     bool `json:"isCorrect"`
 }
 
-type SectionScore struct {
-	Section string `json:"section"`
-	Correct int    `json:"correct"`
-	Total   int    `json:"total"`
-}
-
 type Result struct {
-	Attempt  Attempt        `json:"attempt"`
-	Items    []ResultItem   `json:"items"`
-	Sections []SectionScore `json:"sections"`
+	Attempt Attempt      `json:"attempt"`
+	Items   []ResultItem `json:"items"`
 }
 
 type User struct {

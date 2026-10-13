@@ -65,7 +65,6 @@ type seedExam struct {
 }
 
 type seedTask struct {
-	Section      string   `json:"section"`
 	Prompt       string   `json:"prompt"`
 	Passage      string   `json:"passage"`
 	Options      []string `json:"options"`
@@ -99,8 +98,8 @@ func SeedSamples(ctx context.Context, pool *pgxpool.Pool) error {
 	for _, e := range exams {
 		var examID int64
 		err := tx.QueryRow(ctx, `
-			INSERT INTO exams (course_id, title_ru, title_en, description_ru, description_en)
-			VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+			INSERT INTO exams (status, course_id, title_ru, title_en, description_ru, description_en)
+			VALUES ('approved', $1, $2, $3, $4, $5) RETURNING id`,
 			courseID, e.TitleRu, e.TitleEn, e.DescriptionRu, e.DescriptionEn).Scan(&examID)
 		if err != nil {
 			return err
@@ -112,9 +111,9 @@ func SeedSamples(ctx context.Context, pool *pgxpool.Pool) error {
 			}
 			var taskID int64
 			err = tx.QueryRow(ctx, `
-				INSERT INTO tasks (course_id, section, prompt, passage, options, correct_index, explanation)
-				VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
-				courseID, t.Section, t.Prompt, t.Passage, opts, t.CorrectIndex, t.Explanation).Scan(&taskID)
+				INSERT INTO tasks (course_id, prompt, passage, options, correct_index, explanation)
+				VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+				courseID, t.Prompt, t.Passage, opts, t.CorrectIndex, t.Explanation).Scan(&taskID)
 			if err != nil {
 				return err
 			}

@@ -77,9 +77,9 @@ func (s *Server) startAttempt(w http.ResponseWriter, r *http.Request) {
 	}
 	var tasksCount int
 	if err := s.pool.QueryRow(r.Context(),
-		`SELECT (SELECT count(*) FROM exam_tasks WHERE exam_id = e.id)::int FROM exams e WHERE e.id = $1`,
+		`SELECT (SELECT count(*) FROM exam_tasks WHERE exam_id = e.id)::int FROM exams e WHERE e.id = $1 AND e.status = 'approved'`,
 		examID).Scan(&tasksCount); err != nil {
-		fail(w, err)
+		fail(w, err) // an unknown or still pending exam is a 404
 		return
 	}
 	if tasksCount == 0 {
@@ -314,8 +314,7 @@ func (s *Server) writeResult(w http.ResponseWriter, r *http.Request, attemptID i
 		selected[sa.taskID] = sa.selected
 	}
 
-	res := Result{Attempt: a, Items: make([]ResultItem, 0, len(tasks)), Sections: []SectionScore{}}
-	secIdx := map[string]int{}
+	res := Result{Attempt: a, Items: make([]ResultItem, 0, len(tasks))}
 	for _, t := range tasks {
 		item := ResultItem{Task: t}
 		if sel, ok := selected[t.ID]; ok {
@@ -323,17 +322,6 @@ func (s *Server) writeResult(w http.ResponseWriter, r *http.Request, attemptID i
 			item.IsCorrect = t.CorrectIndex != nil && *t.CorrectIndex == sel
 		}
 		res.Items = append(res.Items, item)
-
-		i, seen := secIdx[t.Section]
-		if !seen {
-			i = len(res.Sections)
-			secIdx[t.Section] = i
-			res.Sections = append(res.Sections, SectionScore{Section: t.Section})
-		}
-		res.Sections[i].Total++
-		if item.IsCorrect {
-			res.Sections[i].Correct++
-		}
 	}
 	writeJSON(w, http.StatusOK, res)
 }

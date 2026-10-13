@@ -162,3 +162,36 @@
 @media (prefers-reduced-motion: reduce) {
   .sheet-up { animation: none; }
 }
+
+/* Audio player sliders: one thin track and a small round thumb (the input stays tall so a finger can grab it).
+   --fill (0-100%) is set inline; --range-color picks the filled part. */
+.range {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  height: 1.75rem;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+  --range-color: var(--primary);
+}
+.range:disabled { opacity: 0.5; cursor: default; }
+.range::-webkit-slider-runnable-track {
+  height: 0.375rem;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--range-color) var(--fill, 0%), var(--border) var(--fill, 0%));
+}
+.range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 1rem;
+  height: 1rem;
+  margin-top: -0.3125rem;
+  border-radius: 50%;
+  border: 0;
+  background: var(--range-color);
+}
+.range::-moz-range-track { height: 0.375rem; border-radius: 999px; background: var(--border); }
+.range::-moz-range-progress { height: 0.375rem; border-radius: 999px; background: var(--range-color); }
+.range::-moz-range-thumb { width: 1rem; height: 1rem; border: 0; border-radius: 50%; background: var(--range-color); }
+.range-subtle { --range-color: var(--muted-foreground); }

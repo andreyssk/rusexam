@@ -4,8 +4,7 @@ import { formatDuration, formatPercent } from '@/shared/lib/format'
 import { useI18n } from '@/shared/lib/i18n'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
-import { Progress } from '@/shared/ui/progress'
+import { Card, CardContent } from '@/shared/ui/card'
 import { ErrorMessage, Loading } from '@/shared/ui/states'
 import { useResult } from '@/entities/attempt'
 import { RetryAttempt, StartAttempt } from '@/features/start-attempt'
@@ -17,7 +16,7 @@ export function ResultSummary({ attemptId }: { attemptId: number }) {
   if (isPending) return <Loading />
   if (error) return <ErrorMessage error={error} />
 
-  const { attempt, items, sections } = data
+  const { attempt, items } = data
   const letter = (i: number) => 'ABCDEFGH'[i]
 
   return (
@@ -51,28 +50,6 @@ export function ResultSummary({ attemptId }: { attemptId: number }) {
               <Link to="/">{t('result.toExams')}</Link>
             </Button>
           </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('result.bySection')}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {sections.map((s) => {
-            const pct = s.total ? (s.correct / s.total) * 100 : 0
-            return (
-              <div key={s.section}>
-                <div className="mb-1 flex justify-between text-sm">
-                  <span>{t(`section.${s.section}`)}</span>
-                  <span className="tabular-nums text-muted-foreground">
-                    {s.correct}/{s.total} · {formatPercent(Math.round(pct))}
-                  </span>
-                </div>
-                <Progress value={pct} label={t(`section.${s.section}`)} />
-              </div>
-            )
-          })}
         </CardContent>
       </Card>
 
