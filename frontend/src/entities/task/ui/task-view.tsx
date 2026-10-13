@@ -1,7 +1,6 @@
-import { Check, X } from 'lucide-react'
+import { BookOpen, Check, X } from 'lucide-react'
 import type { Task } from '@/shared/api'
 import { cn } from '@/shared/lib/cn'
-import { useI18n } from '@/shared/lib/i18n'
 import { TaskAudio } from './task-audio'
 
 type Props = {
@@ -18,7 +17,6 @@ type Props = {
 const LETTERS = 'ABCDEFGH'
 
 export function TaskView({ task, selectedIndex, correctIndex, disabled, onSelect, order }: Props) {
-  const { t } = useI18n()
   const revealed = correctIndex !== undefined
 
   return (
@@ -26,11 +24,22 @@ export function TaskView({ task, selectedIndex, correctIndex, disabled, onSelect
       {task.audioAssetId != null && <TaskAudio assetId={task.audioAssetId} autoPlay={task.audioAutoplay} />}
 
       {task.passage && (
-        <figure className="rounded-2xl border-2 border-b-4 bg-muted p-4">
-          <figcaption className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            {t('run.passage')}
+        // A light reading block: just a soft background and the book icon, with little padding so the text gets the width.
+        <figure className="rounded-xl bg-muted px-2.5 py-2.5 md:px-4 md:py-3">
+          {/* The instruction is Russian, like the task itself, whatever the interface language. */}
+          <figcaption lang="ru" translate="no" className="mb-1.5 flex items-center gap-1.5 text-sm font-bold text-accent">
+            <BookOpen size={16} aria-hidden="true" />
+            Прочитайте текст
           </figcaption>
-          <p lang="ru" translate="no" className="text-base leading-relaxed">{task.passage}</p>
+          <div lang="ru" translate="no" className="max-w-prose space-y-3 text-base leading-[1.65] text-pretty md:text-lg md:leading-[1.7]">
+            {task.passage
+              .split(/\n+/)
+              .map((para) => para.trim())
+              .filter(Boolean)
+              .map((para, i) => (
+                <p key={i}>{para}</p>
+              ))}
+          </div>
         </figure>
       )}
 

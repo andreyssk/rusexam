@@ -27,7 +27,7 @@ export function RetryAttempt({ examId, mode, className }: { examId: number; mode
   return (
     <div className="space-y-2">
       <Button className={className} loading={start.isPending} onClick={() => start.mutate(mode)}>
-        <RotateCcw size={16} /> {t('result.retry')}
+        <RotateCcw size={16} className="shrink-0 max-[400px]:hidden" /> {t('result.retry')}
       </Button>
       {start.isError && <ErrorMessage error={start.error} />}
     </div>

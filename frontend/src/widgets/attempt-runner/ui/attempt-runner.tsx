@@ -136,6 +136,10 @@ function Runner({ attemptId, data }: { attemptId: number; data: AttemptState }) 
   const locked = isTraining && submitted
   const canConfirm = !locked && picked !== undefined && (isTraining || picked !== answer?.selectedIndex)
 
+  // Progress: in training, the queue positions passed (the current one counts once answered) out of the queue, repeats included.
+  const progressDone = isTraining ? pos + (submitted ? 1 : 0) : answeredCount
+  const progressTotal = isTraining ? queue.length : total
+
   const afterResult = (correct: boolean) => {
     if (!isTraining) return
     if (correct) {
@@ -305,17 +309,13 @@ function Runner({ attemptId, data }: { attemptId: number; data: AttemptState }) 
         </div>
       </div>
 
-      <div>
-        <Progress value={(answeredCount / total) * 100} label={t('run.answered', { a: answeredCount, n: total })} />
-        <p className="mt-1 text-xs text-muted-foreground">{t('run.answered', { a: answeredCount, n: total })}</p>
-      </div>
+      {/* Training counts repeats of mistaken tasks too: the queue grows by one with each mistake. Exams have no repeats. */}
+      <Progress value={(progressDone / progressTotal) * 100} label={t('run.answered', { a: progressDone, n: progressTotal })} />
 
       {/* On mobile the question sits directly on the page: no frame, no padding. */}
       <Card className="max-md:rounded-none max-md:border-0 max-md:bg-transparent">
         <CardContent className="space-y-5 pt-5 max-md:p-0">
-          <p className="text-sm text-muted-foreground">
-            {isRepeat ? t('run.repeat') : t('run.question', { i: pos + 1, n: total })}
-          </p>
+          {isRepeat && <p className="text-sm text-muted-foreground">{t('run.repeat')}</p>}
 
           <TaskView
             key={`${pos}-${task.id}`}

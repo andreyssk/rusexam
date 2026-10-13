@@ -2,6 +2,7 @@ import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import { isAttemptRunPath } from '@/shared/lib/routes'
 import { cn } from '@/shared/lib/cn'
 import { Loading } from '@/shared/ui/states'
+import { StreakUpdateOverlay } from '@/shared/ui/streak-update'
 import { AdminShell } from '@/widgets/admin-shell'
 import { Header } from '@/widgets/header'
 import { useAuth } from '@/entities/user'
@@ -26,6 +27,7 @@ function Layout() {
   return (
     <div className="min-h-dvh">
       <Header />
+      <StreakUpdateOverlay />
       <main className={cn('mx-auto max-w-5xl px-4 py-6 md:pb-6', tabBar ? 'pb-[calc(6rem+env(safe-area-inset-bottom))]' : 'max-md:pt-3')}>
         <Outlet />
       </main>

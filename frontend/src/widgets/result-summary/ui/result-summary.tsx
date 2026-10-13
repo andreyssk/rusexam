@@ -45,8 +45,8 @@ export function ResultSummary({ attemptId }: { attemptId: number }) {
           </dl>
           {/* Its own full-width row, split evenly between the two buttons. */}
           <div className="grid grid-cols-2 items-start gap-2 sm:col-span-full">
-            <RetryAttempt examId={attempt.examId} mode={attempt.mode} className="w-full" />
-            <Button variant="outline" className="w-full" asChild>
+            <RetryAttempt examId={attempt.examId} mode={attempt.mode} className="w-full whitespace-nowrap px-2 max-sm:text-xs sm:px-5" />
+            <Button variant="outline" className="w-full whitespace-nowrap px-2 max-sm:text-xs sm:px-5" asChild>
               <Link to="/">{t('result.toExams')}</Link>
             </Button>
           </div>
