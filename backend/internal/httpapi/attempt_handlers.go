@@ -11,13 +11,13 @@ const maxDurationSeconds = 7 * 24 * 3600
 
 const attemptSelect = `
 SELECT a.id, a.exam_id, e.title_ru, e.title_en, a.mode, a.status, a.started_at, a.finished_at,
-       a.duration_seconds, a.correct_count, a.total_count, a.score_percent::float8
+       a.duration_seconds, a.correct_count, a.total_count, a.score_percent::float8, e.preserve_order
 FROM attempts a JOIN exams e ON e.id = a.exam_id`
 
 func scanAttempt(row pgx.Row) (Attempt, error) {
 	var a Attempt
 	err := row.Scan(&a.ID, &a.ExamID, &a.ExamTitleRu, &a.ExamTitleEn, &a.Mode, &a.Status, &a.StartedAt,
-		&a.FinishedAt, &a.DurationSeconds, &a.CorrectCount, &a.TotalCount, &a.ScorePercent)
+		&a.FinishedAt, &a.DurationSeconds, &a.CorrectCount, &a.TotalCount, &a.ScorePercent, &a.PreserveOrder)
 	return a, err
 }
 

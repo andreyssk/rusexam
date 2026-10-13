@@ -78,10 +78,10 @@ function TaskBank({ courseId }: { courseId: number }) {
               initial={editing.kind === 'edit' ? editing.task : undefined}
               pending={create.isPending || update.isPending}
               onCancel={close}
-              onSubmit={(body, audio) =>
+              onSubmit={(body) =>
                 editing.kind === 'new'
-                  ? create.mutate({ body: { ...body, courseId }, audio }, { onSuccess: close })
-                  : update.mutate({ id: editing.task.id, body, audio }, { onSuccess: close })
+                  ? create.mutate({ ...body, courseId }, { onSuccess: close })
+                  : update.mutate({ id: editing.task.id, body }, { onSuccess: close })
               }
             />
           </CardContent>

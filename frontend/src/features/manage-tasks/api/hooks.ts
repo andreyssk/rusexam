@@ -29,26 +29,6 @@ export function useExamTasks(examId: number) {
 
 // ---- writes ----
 
-/** What to do with a task's audio when saving it: upload an mp3, or remove the current one. Absent = leave as is. */
-export type AudioChange = { file: File } | { remove: true } | undefined
-
-async function applyAudio(taskId: number, audio: AudioChange) {
-  if (!audio) return
-  if ('remove' in audio) {
-    await unwrap(api.DELETE('/admin/tasks/{taskID}/audio', { params: { path: { taskID: taskId } } }))
-    return
-  }
-  await unwrap(
-    api.PUT('/admin/tasks/{taskID}/audio', {
-      params: { path: { taskID: taskId } },
-      // The raw file is the body; skip the default JSON serialization.
-      body: audio.file as unknown as string,
-      bodySerializer: (b: unknown) => b as BodyInit,
-      headers: { 'Content-Type': 'audio/mpeg' },
-    }),
-  )
-}
-
 const createTask = (body: TaskInput & { courseId: number }) => unwrap(api.POST('/admin/tasks', { body }))
 const setExamTasks = (examId: number, taskIds: number[]) =>
   unwrap(api.PUT('/admin/exams/{examID}/tasks', { params: { path: { examID: examId } }, body: { taskIds } }))
@@ -60,7 +40,6 @@ function useWriteHelpers() {
   const errorText = useErrorText()
   return {
     refresh: () => {
-      void qc.invalidateQueries({ queryKey: ['task-audio'] })
       void qc.invalidateQueries({ queryKey: ['admin-bank'] })
       void qc.invalidateQueries({ queryKey: ['admin-exam-tasks'] })
       void qc.invalidateQueries({ queryKey: ['exams'] })
@@ -74,11 +53,7 @@ function useWriteHelpers() {
 export function useCreateTask() {
   const h = useWriteHelpers()
   return useMutation({
-    mutationFn: async ({ body, audio }: { body: TaskInput & { courseId: number }; audio?: AudioChange }) => {
-      const task = await createTask(body)
-      await applyAudio(task.id, audio)
-      return task
-    },
+    mutationFn: createTask,
     onSuccess: () => {
       h.refresh()
       h.ok('toast.taskCreated')
@@ -91,9 +66,8 @@ export function useCreateTask() {
 export function useCreateAndLinkTask(examId: number) {
   const h = useWriteHelpers()
   return useMutation({
-    mutationFn: async ({ body, currentIds, audio }: { body: TaskInput & { courseId: number }; currentIds: number[]; audio?: AudioChange }) => {
+    mutationFn: async ({ body, currentIds }: { body: TaskInput & { courseId: number }; currentIds: number[] }) => {
       const task = await createTask(body)
-      await applyAudio(task.id, audio)
       await setExamTasks(examId, [...currentIds, task.id])
       return task
     },
@@ -111,11 +85,8 @@ export function useCreateAndLinkTask(examId: number) {
 export function useUpdateTask() {
   const h = useWriteHelpers()
   return useMutation({
-    mutationFn: async ({ id, body, audio }: { id: number; body: TaskInput; audio?: AudioChange }) => {
-      const task = await unwrap(api.PUT('/admin/tasks/{taskID}', { params: { path: { taskID: id } }, body }))
-      await applyAudio(id, audio)
-      return task
-    },
+    mutationFn: ({ id, body }: { id: number; body: TaskInput }) =>
+      unwrap(api.PUT('/admin/tasks/{taskID}', { params: { path: { taskID: id } }, body })),
     onSuccess: () => {
       h.refresh()
       h.ok('toast.taskSaved')

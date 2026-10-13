@@ -1,22 +1,22 @@
-import { Music, Plus, Trash2 } from 'lucide-react'
-import { useRef, useState, type FormEvent } from 'react'
+import { Plus, Trash2 } from 'lucide-react'
+import { useState, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
 import type { Task, TaskInput } from '@/shared/api'
 import { useI18n } from '@/shared/lib/i18n'
 import { Button } from '@/shared/ui/button'
-import { Input, Label, Textarea } from '@/shared/ui/input'
-import { ErrorMessage } from '@/shared/ui/states'
+import { Input, Label, Select, Textarea } from '@/shared/ui/input'
+import { Switch } from '@/shared/ui/switch'
+import { useAssets } from '@/entities/asset'
 import { TaskAudio } from '@/entities/task'
-import type { AudioChange } from '../api/hooks'
 
 type Props = {
   initial?: Task
   pending?: boolean
-  onSubmit: (v: TaskInput, audio: AudioChange) => void
+  onSubmit: (v: TaskInput) => void
   onCancel: () => void
 }
 
 const emptyOptions = () => ['', '']
-const MAX_AUDIO_BYTES = 5 << 20
 
 export function TaskForm({ initial, pending, onSubmit, onCancel }: Props) {
   const { t } = useI18n()
@@ -25,22 +25,10 @@ export function TaskForm({ initial, pending, onSubmit, onCancel }: Props) {
   const [options, setOptions] = useState<string[]>(initial ? [...initial.options] : emptyOptions())
   const [correct, setCorrect] = useState(initial?.correctIndex ?? 0)
   const [explanation, setExplanation] = useState(initial?.explanation ?? '')
-  // The mp3: a newly picked file, or a request to drop the current one.
-  const [audioFile, setAudioFile] = useState<File | null>(null)
-  const [removeAudio, setRemoveAudio] = useState(false)
-  const [audioError, setAudioError] = useState('')
-  const audioInput = useRef<HTMLInputElement>(null)
-
-  const pickAudio = (file: File | undefined) => {
-    if (audioInput.current) audioInput.current.value = '' // allow choosing the same file again
-    if (!file) return
-    if (!/\.mp3$/i.test(file.name) && file.type !== 'audio/mpeg') return setAudioError(t('admin.audioNotMp3'))
-    if (file.size > MAX_AUDIO_BYTES) return setAudioError(t('admin.audioTooBig'))
-    setAudioError('')
-    setAudioFile(file)
-    setRemoveAudio(false)
-  }
-  const hasCurrentAudio = !!initial?.hasAudio && !removeAudio && !audioFile
+  // The audio is an asset from the library, shared with any other task that uses it.
+  const [audioAssetId, setAudioAssetId] = useState<number | null>(initial?.audioAssetId ?? null)
+  const [autoplay, setAutoplay] = useState(initial?.audioAutoplay ?? true)
+  const assets = useAssets('audio')
 
   const setOption = (i: number, value: string) => setOptions((os) => os.map((o, j) => (j === i ? value : o)))
 
@@ -51,8 +39,7 @@ export function TaskForm({ initial, pending, onSubmit, onCancel }: Props) {
 
   const submit = (e: FormEvent) => {
     e.preventDefault()
-    const audio: AudioChange = audioFile ? { file: audioFile } : removeAudio && initial?.hasAudio ? { remove: true } : undefined
-    onSubmit({ prompt, passage, options, correctIndex: correct, explanation }, audio)
+    onSubmit({ prompt, passage, options, correctIndex: correct, explanation, audioAssetId, audioAutoplay: autoplay })
   }
 
   return (
@@ -110,39 +97,37 @@ export function TaskForm({ initial, pending, onSubmit, onCancel }: Props) {
         )}
       </fieldset>
 
-      <div className="space-y-2">
-        {/* Not a <label for>: a full-width label would open the file picker from anywhere in this row. */}
-        <p className="mb-1.5 text-sm font-bold">{t('admin.audio')}</p>
-        <input
-          ref={audioInput}
-          aria-label={t('admin.audioChoose')}
-          type="file"
-          accept="audio/mpeg,.mp3"
-          className="sr-only"
-          onChange={(e) => pickAudio(e.target.files?.[0])}
-        />
-        {hasCurrentAudio && initial && <TaskAudio taskId={initial.id} />}
-        <div className="flex flex-wrap items-center gap-2">
-          <Button type="button" variant="outline" size="sm" onClick={() => audioInput.current?.click()}>
-            <Music size={14} /> {t('admin.audioChoose')}
-          </Button>
-          {audioFile && <span className="truncate text-sm text-muted-foreground">{audioFile.name}</span>}
-          {(hasCurrentAudio || audioFile) && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="text-destructive"
-              onClick={() => {
-                setAudioFile(null)
-                setRemoveAudio(true)
-              }}
-            >
-              <Trash2 size={14} /> {t('admin.audioRemove')}
-            </Button>
+      <div className="space-y-3">
+        <div>
+          <Label htmlFor="audioAsset">{t('admin.audio')}</Label>
+          <Select
+            id="audioAsset"
+            value={audioAssetId ?? ''}
+            onChange={(e) => setAudioAssetId(e.target.value ? Number(e.target.value) : null)}
+          >
+            <option value="">{t('admin.audioNone')}</option>
+            {assets.data?.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name}
+                {a.externalId ? ` (${a.externalId})` : ''}
+              </option>
+            ))}
+          </Select>
+          {assets.data?.length === 0 && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              {t('admin.audioNoAssets')}{' '}
+              <Link to="/admin/assets" className="font-bold text-accent hover:underline">
+                {t('nav.assets')}
+              </Link>
+            </p>
           )}
         </div>
-        {audioError && <ErrorMessage message={audioError} />}
+        {audioAssetId != null && (
+          <>
+            <TaskAudio key={audioAssetId} assetId={audioAssetId} />
+            <Switch checked={autoplay} onChange={setAutoplay} label={t('admin.autoplay')} hint={t('admin.autoplayHint')} />
+          </>
+        )}
       </div>
 
       <div>

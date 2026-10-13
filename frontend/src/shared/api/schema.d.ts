@@ -37,25 +37,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/tasks/{taskID}/audio": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                taskID: components["parameters"]["TaskID"];
-            };
-            cookie?: never;
-        };
-        /** @description The task's mp3. Supports range requests. 404 when the task has no audio. */
-        get: operations["getTaskAudio"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/me/preferences": {
         parameters: {
             query?: never;
@@ -65,6 +46,25 @@ export interface paths {
         };
         get: operations["getPreferences"];
         put: operations["updatePreferences"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/assets/{assetID}/file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                assetID: components["parameters"]["AssetID"];
+            };
+            cookie?: never;
+        };
+        /** @description The asset's bytes. Supports range requests. */
+        get: operations["getAssetFile"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -476,20 +476,36 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/admin/tasks/{taskID}/audio": {
+    "/admin/assets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["adminListAssets"];
+        put?: never;
+        post: operations["adminCreateAsset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/assets/{assetID}": {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                taskID: components["parameters"]["TaskID"];
+                assetID: components["parameters"]["AssetID"];
             };
             cookie?: never;
         };
         get?: never;
-        /** @description Sets (or replaces) the task's audio. The body is the raw mp3, at most 5 MB. */
-        put: operations["adminSetTaskAudio"];
+        put: operations["adminUpdateAsset"];
         post?: never;
-        delete: operations["adminDeleteTaskAudio"];
+        /** @description Fails with 409 while tasks still use the asset. */
+        delete: operations["adminDeleteAsset"];
         options?: never;
         head?: never;
         patch?: never;
@@ -630,8 +646,13 @@ export interface components {
         Task: {
             /** Format: int64 */
             id: number;
-            /** @description The task has an mp3, served by GET /tasks/{taskID}/audio. */
-            hasAudio: boolean;
+            /**
+             * Format: int64
+             * @description The audio asset played with the task (GET /assets/{assetID}/file).
+             */
+            audioAssetId: number | null;
+            /** @description Start the audio by itself when the task appears. */
+            audioAutoplay: boolean;
             /** @description Russian text of the question. */
             prompt: string;
             /** @description Optional Russian text to read. */
@@ -649,6 +670,35 @@ export interface components {
              * @description Playback rate of task audio; 1 is normal.
              */
             audioSpeed: number;
+        };
+        /** @description A stored file (audio or image) that tasks can use. */
+        Asset: {
+            /** Format: int64 */
+            id: number;
+            type: components["schemas"]["AssetType"];
+            name: string;
+            /** @description The asset's ID in another system; unique when set. */
+            externalId: string | null;
+            mime: string;
+            /** @description Bytes. */
+            size: number;
+            /** @description How many tasks use it. */
+            usedCount: number;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        /** @enum {string} */
+        AssetType: "audio" | "image";
+        /** @description Multipart form. The file is required when creating; on update omit it to keep the current file. */
+        AssetForm: {
+            type?: components["schemas"]["AssetType"];
+            name: string;
+            externalId?: string;
+            /**
+             * Format: binary
+             * @description An mp3 for audio; png
+             */
+            file?: string;
         };
         Course: {
             /** Format: int64 */
@@ -689,6 +739,13 @@ export interface components {
              * @description Required when creating a task; ignored on update (a task never changes course).
              */
             courseId?: number;
+            /**
+             * Format: int64
+             * @description An audio asset; null = no audio.
+             */
+            audioAssetId?: number | null;
+            /** @description Defaults to true when omitted. */
+            audioAutoplay?: boolean;
             prompt: string;
             passage?: string;
             options: string[];
@@ -732,6 +789,8 @@ export interface components {
              * @description The exam's category, which must belong to the exam's course; null = uncategorized.
              */
             categoryId?: number | null;
+            /** @description Sessions keep the task order instead of shuffling it. */
+            preserveOrder?: boolean;
             titleRu?: string;
             titleEn?: string;
             descriptionRu?: string;
@@ -765,6 +824,7 @@ export interface components {
             /** Format: int64 */
             categoryId: number | null;
             status: components["schemas"]["ExamStatus"];
+            preserveOrder: boolean;
             titleRu: string;
             titleEn: string;
             descriptionRu: string;
@@ -792,6 +852,8 @@ export interface components {
             totalCount?: number | null;
             /** Format: double */
             scorePercent?: number | null;
+            /** @description The exam's setting: the session must not shuffle its tasks. */
+            preserveOrder: boolean;
         };
         Streak: {
             /** @description Days in a row up to today */
@@ -838,6 +900,7 @@ export interface components {
         AttemptID: number;
         CourseID: number;
         CategoryID: number;
+        AssetID: number;
         TaskID: number;
     };
     requestBodies: never;
@@ -896,29 +959,6 @@ export interface operations {
             default: components["responses"]["Error"];
         };
     };
-    getTaskAudio: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                taskID: components["parameters"]["TaskID"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "audio/mpeg": string;
-                };
-            };
-            default: components["responses"]["Error"];
-        };
-    };
     getPreferences: {
         parameters: {
             query?: never;
@@ -960,6 +1000,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Preferences"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getAssetFile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                assetID: components["parameters"]["AssetID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
                 };
             };
             default: components["responses"]["Error"];
@@ -1679,18 +1742,66 @@ export interface operations {
             default: components["responses"]["Error"];
         };
     };
-    adminSetTaskAudio: {
+    adminListAssets: {
+        parameters: {
+            query?: {
+                type?: components["schemas"]["AssetType"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Asset"][];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    adminCreateAsset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["AssetForm"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Asset"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    adminUpdateAsset: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                taskID: components["parameters"]["TaskID"];
+                assetID: components["parameters"]["AssetID"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "audio/mpeg": string;
+                "multipart/form-data": components["schemas"]["AssetForm"];
             };
         };
         responses: {
@@ -1700,18 +1811,18 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AdminTask"];
+                    "application/json": components["schemas"]["Asset"];
                 };
             };
             default: components["responses"]["Error"];
         };
     };
-    adminDeleteTaskAudio: {
+    adminDeleteAsset: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                taskID: components["parameters"]["TaskID"];
+                assetID: components["parameters"]["AssetID"];
             };
             cookie?: never;
         };

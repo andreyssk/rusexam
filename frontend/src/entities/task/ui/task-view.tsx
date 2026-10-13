@@ -23,7 +23,7 @@ export function TaskView({ task, selectedIndex, correctIndex, disabled, onSelect
 
   return (
     <div className="space-y-4">
-      {task.hasAudio && <TaskAudio taskId={task.id} autoPlay />}
+      {task.audioAssetId != null && <TaskAudio assetId={task.audioAssetId} autoPlay={task.audioAutoplay} />}
 
       {task.passage && (
         <figure className="rounded-2xl border-2 border-b-4 bg-muted p-4">

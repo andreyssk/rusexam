@@ -79,8 +79,8 @@ function Runner({ attemptId, data }: { attemptId: number; data: AttemptState }) 
   const { t, pick } = useI18n()
   const confirm = useConfirm()
   const { attempt } = data
-  // Every session gets its own question order (seeded by the attempt, so a reload keeps it).
-  const tasks = useMemo(() => seededShuffle(data.tasks, attemptId), [data.tasks, attemptId])
+  // Every session gets its own question order (seeded by the attempt, so a reload keeps it), unless the exam keeps its order.
+  const tasks = useMemo(() => (attempt.preserveOrder ? data.tasks : seededShuffle(data.tasks, attemptId)), [data.tasks, attempt.preserveOrder, attemptId])
   const total = tasks.length
   const isTraining = attempt.mode === 'training'
 

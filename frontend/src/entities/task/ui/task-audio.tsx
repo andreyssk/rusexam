@@ -3,8 +3,8 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { formatDuration } from '@/shared/lib/format'
 import { useI18n } from '@/shared/lib/i18n'
 import { ErrorMessage } from '@/shared/ui/states'
+import { useAssetUrl } from '@/entities/asset'
 import { usePreferences } from '@/entities/user'
-import { useTaskAudioUrl } from '../api/audio'
 
 const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2]
 
@@ -15,10 +15,10 @@ const volumeSettable = (() => {
   return a.volume === 0.5
 })()
 
-/** A task's audio with play/pause, a seek bar and volume. With `autoPlay` it starts by itself (if the browser allows it). */
-export function TaskAudio({ taskId, autoPlay }: { taskId: number; autoPlay?: boolean }) {
+/** An audio asset with play/pause, a seek bar and volume. With `autoPlay` it starts by itself (if the browser allows it). */
+export function TaskAudio({ assetId, autoPlay }: { assetId: number; autoPlay?: boolean }) {
   const { t } = useI18n()
-  const { url, error } = useTaskAudioUrl(taskId)
+  const { url, error } = useAssetUrl(assetId)
   const el = useRef<HTMLAudioElement>(null)
   const [playing, setPlaying] = useState(false)
   const [time, setTime] = useState(0)

@@ -3,6 +3,7 @@ import type { ExamInput } from '@/shared/api'
 import { useI18n } from '@/shared/lib/i18n'
 import { Button } from '@/shared/ui/button'
 import { Input, Label, Select, Textarea } from '@/shared/ui/input'
+import { Switch } from '@/shared/ui/switch'
 import { useCategories } from '@/entities/category'
 
 /** The course is fixed when an exam is created, so the form does not edit it. */
@@ -23,12 +24,13 @@ export function ExamForm({ courseId, initial, submitLabel, pending, onSubmit, on
   const categories = useCategories(courseId)
   const [v, setV] = useState<Required<ExamFields>>({
     categoryId: initial?.categoryId ?? null,
+    preserveOrder: initial?.preserveOrder ?? false,
     titleRu: initial?.titleRu ?? '',
     titleEn: initial?.titleEn ?? '',
     descriptionRu: initial?.descriptionRu ?? '',
     descriptionEn: initial?.descriptionEn ?? '',
   })
-  const set = (k: Exclude<keyof ExamFields, 'categoryId'>) => (e: { target: { value: string } }) => setV((p) => ({ ...p, [k]: e.target.value }))
+  const set = (k: Exclude<keyof ExamFields, 'categoryId' | 'preserveOrder'>) => (e: { target: { value: string } }) => setV((p) => ({ ...p, [k]: e.target.value }))
 
   const submit = (e: FormEvent) => {
     e.preventDefault()
@@ -53,6 +55,12 @@ export function ExamForm({ courseId, initial, submitLabel, pending, onSubmit, on
           ))}
         </Select>
       </div>
+      <Switch
+        checked={v.preserveOrder}
+        onChange={(preserveOrder) => setV((p) => ({ ...p, preserveOrder }))}
+        label={t('admin.preserveOrder')}
+        hint={t('admin.preserveOrderHint')}
+      />
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <Label htmlFor="titleRu">{t('admin.titleRu')}</Label>

@@ -160,7 +160,7 @@ export function AdminExamEditor({ examId }: { examId: number }) {
               <TaskForm
                 pending={createAndLink.isPending}
                 onCancel={close}
-                onSubmit={(body, audio) => createAndLink.mutate({ body: { ...body, courseId: exam.data.courseId }, currentIds: ids, audio }, { onSuccess: close })}
+                onSubmit={(body) => createAndLink.mutate({ body: { ...body, courseId: exam.data.courseId }, currentIds: ids }, { onSuccess: close })}
               />
             </CardContent>
           </Card>
@@ -180,7 +180,7 @@ export function AdminExamEditor({ examId }: { examId: number }) {
                 initial={panel.task}
                 pending={updateTask.isPending}
                 onCancel={close}
-                onSubmit={(body, audio) => updateTask.mutate({ id: panel.task.id, body, audio }, { onSuccess: close })}
+                onSubmit={(body) => updateTask.mutate({ id: panel.task.id, body }, { onSuccess: close })}
               />
             </CardContent>
           </Card>

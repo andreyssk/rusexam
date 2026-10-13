@@ -40,6 +40,9 @@ func validateTask(in *TaskInput) string {
 	return ""
 }
 
+// autoplayOrDefault: a task's audio autoplays unless the admin switched that off.
+func autoplayOrDefault(v *bool) bool { return v == nil || *v }
+
 func (s *Server) adminCreateExam(w http.ResponseWriter, r *http.Request) {
 	var in ExamInput
 	if !readJSON(w, r, &in) {
@@ -54,8 +57,8 @@ func (s *Server) adminCreateExam(w http.ResponseWriter, r *http.Request) {
 	}
 	var id int64
 	if err := s.pool.QueryRow(r.Context(),
-		`INSERT INTO exams (course_id, category_id, title_ru, title_en, description_ru, description_en) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-		in.CourseID, in.CategoryID, in.TitleRu, in.TitleEn, in.DescriptionRu, in.DescriptionEn).Scan(&id); err != nil {
+		`INSERT INTO exams (course_id, category_id, preserve_order, title_ru, title_en, description_ru, description_en) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+		in.CourseID, in.CategoryID, in.PreserveOrder, in.TitleRu, in.TitleEn, in.DescriptionRu, in.DescriptionEn).Scan(&id); err != nil {
 		fail(w, err)
 		return
 	}
@@ -92,8 +95,8 @@ func (s *Server) adminUpdateExam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	tag, err := s.pool.Exec(r.Context(),
-		`UPDATE exams SET category_id = $6, title_ru = $2, title_en = $3, description_ru = $4, description_en = $5, updated_at = now()
-		 WHERE id = $1`, id, in.TitleRu, in.TitleEn, in.DescriptionRu, in.DescriptionEn, in.CategoryID)
+		`UPDATE exams SET category_id = $6, preserve_order = $7, title_ru = $2, title_en = $3, description_ru = $4, description_en = $5, updated_at = now()
+		 WHERE id = $1`, id, in.TitleRu, in.TitleEn, in.DescriptionRu, in.DescriptionEn, in.CategoryID, in.PreserveOrder)
 	if err != nil {
 		fail(w, err)
 		return
@@ -189,14 +192,14 @@ func (s *Server) adminCreateTask(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, msg)
 		return
 	}
-	if !s.requireCourse(w, r, in.CourseID) {
+	if !s.requireCourse(w, r, in.CourseID) || !s.requireAudioAsset(w, r, in.AudioAssetID) {
 		return
 	}
 	var id int64
 	err := s.pool.QueryRow(r.Context(), `
-		INSERT INTO tasks (course_id, prompt, passage, options, correct_index, explanation)
-		VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-		in.CourseID, in.Prompt, in.Passage, in.Options, in.CorrectIndex, in.Explanation).Scan(&id)
+		INSERT INTO tasks (course_id, prompt, passage, options, correct_index, explanation, audio_asset_id, audio_autoplay)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
+		in.CourseID, in.Prompt, in.Passage, in.Options, in.CorrectIndex, in.Explanation, in.AudioAssetID, autoplayOrDefault(in.AudioAutoplay)).Scan(&id)
 	if err != nil {
 		fail(w, err)
 		return
@@ -217,10 +220,14 @@ func (s *Server) adminUpdateTask(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, msg)
 		return
 	}
+	if !s.requireAudioAsset(w, r, in.AudioAssetID) {
+		return
+	}
 	tag, err := s.pool.Exec(r.Context(), `
-		UPDATE tasks SET prompt = $2, passage = $3, options = $4, correct_index = $5, explanation = $6
+		UPDATE tasks SET prompt = $2, passage = $3, options = $4, correct_index = $5, explanation = $6,
+		       audio_asset_id = $7, audio_autoplay = $8
 		WHERE id = $1`,
-		id, in.Prompt, in.Passage, in.Options, in.CorrectIndex, in.Explanation)
+		id, in.Prompt, in.Passage, in.Options, in.CorrectIndex, in.Explanation, in.AudioAssetID, autoplayOrDefault(in.AudioAutoplay))
 	if err != nil {
 		fail(w, err)
 		return

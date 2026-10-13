@@ -11,8 +11,10 @@ type Task struct {
 	Options      []string `json:"options"`
 	CorrectIndex *int     `json:"correctIndex,omitempty"`
 	Explanation  string   `json:"explanation,omitempty"`
-	// HasAudio: the task has an mp3, served by GET /tasks/{taskID}/audio.
-	HasAudio bool `json:"hasAudio"`
+	// AudioAssetID is the audio asset played with the task (served by GET /assets/{id}/file), if any.
+	AudioAssetID *int64 `json:"audioAssetId"`
+	// AudioAutoplay: start the audio by itself when the task appears.
+	AudioAutoplay bool `json:"audioAutoplay"`
 }
 
 type ExamRef struct {
@@ -74,12 +76,16 @@ type TaskInput struct {
 	Options      []string `json:"options"`
 	CorrectIndex int      `json:"correctIndex"`
 	Explanation  string   `json:"explanation"`
+	// AudioAssetID is optional; AudioAutoplay defaults to true when omitted.
+	AudioAssetID  *int64 `json:"audioAssetId"`
+	AudioAutoplay *bool  `json:"audioAutoplay"`
 }
 
 // ExamInput.CourseID is required when an exam is created and ignored on update: an exam never changes course.
 type ExamInput struct {
 	CourseID      int64  `json:"courseId"`
 	CategoryID    *int64 `json:"categoryId"`
+	PreserveOrder bool   `json:"preserveOrder"`
 	TitleRu       string `json:"titleRu"`
 	TitleEn       string `json:"titleEn"`
 	DescriptionRu string `json:"descriptionRu"`
@@ -102,7 +108,9 @@ type Exam struct {
 	CourseID   int64  `json:"courseId"`
 	CategoryID *int64 `json:"categoryId"`
 	// Status is "pending" until an admin approves the exam; learners only see approved exams.
-	Status        string       `json:"status"`
+	Status string `json:"status"`
+	// PreserveOrder: sessions keep the task order instead of shuffling it.
+	PreserveOrder bool         `json:"preserveOrder"`
 	TitleRu       string       `json:"titleRu"`
 	TitleEn       string       `json:"titleEn"`
 	DescriptionRu string       `json:"descriptionRu"`
@@ -125,6 +133,8 @@ type Attempt struct {
 	CorrectCount    *int       `json:"correctCount"`
 	TotalCount      *int       `json:"totalCount"`
 	ScorePercent    *float64   `json:"scorePercent"`
+	// PreserveOrder is the exam's setting: the session must not shuffle its tasks.
+	PreserveOrder bool `json:"preserveOrder"`
 }
 
 type AnswerState struct {

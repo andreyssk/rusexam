@@ -15,7 +15,7 @@ type querier interface {
 }
 
 const examsQuery = `
-SELECT e.id, e.course_id, e.category_id, e.status, e.title_ru, e.title_en, e.description_ru, e.description_en,
+SELECT e.id, e.course_id, e.category_id, e.status, e.preserve_order, e.title_ru, e.title_en, e.description_ru, e.description_en,
        (SELECT count(*) FROM exam_tasks et WHERE et.exam_id = e.id)::int,
        COALESCE(g.attempts, 0)::int, g.avg_score::float8,
        COALESCE(u.attempts, 0)::int, u.best::float8, u.last::float8
@@ -48,7 +48,7 @@ func queryExams(ctx context.Context, q querier, userID int64, examID, courseID *
 			e  Exam
 			my MyExamStats
 		)
-		if err := rows.Scan(&e.ID, &e.CourseID, &e.CategoryID, &e.Status, &e.TitleRu, &e.TitleEn, &e.DescriptionRu, &e.DescriptionEn,
+		if err := rows.Scan(&e.ID, &e.CourseID, &e.CategoryID, &e.Status, &e.PreserveOrder, &e.TitleRu, &e.TitleEn, &e.DescriptionRu, &e.DescriptionEn,
 			&e.TasksCount, &e.Stats.AttemptsCount, &e.Stats.AvgScore,
 			&my.AttemptsCount, &my.BestScore, &my.LastScore); err != nil {
 			return nil, err
@@ -98,14 +98,13 @@ func (s *Server) getExam(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, exams[0])
 }
 
-const taskColumns = `t.id, t.prompt, t.passage, t.options, t.correct_index, t.explanation,
-	EXISTS (SELECT 1 FROM task_audio ta WHERE ta.task_id = t.id)`
+const taskColumns = `t.id, t.prompt, t.passage, t.options, t.correct_index, t.explanation, t.audio_asset_id, t.audio_autoplay`
 
 func scanTask(row pgx.Row, extra ...any) (Task, error) {
 	var t Task
 	var ci int
 	err := row.Scan(append([]any{&t.ID, &t.Prompt, &t.Passage,
-		&t.Options, &ci, &t.Explanation, &t.HasAudio}, extra...)...)
+		&t.Options, &ci, &t.Explanation, &t.AudioAssetID, &t.AudioAutoplay}, extra...)...)
 	t.CorrectIndex = &ci
 	return t, err
 }

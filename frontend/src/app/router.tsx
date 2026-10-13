@@ -6,6 +6,7 @@ import { AdminShell } from '@/widgets/admin-shell'
 import { Header } from '@/widgets/header'
 import { useAuth } from '@/entities/user'
 import { AdminPage } from '@/pages/admin'
+import { AdminAssetsPage } from '@/pages/admin-assets'
 import { AdminCategoriesPage } from '@/pages/admin-categories'
 import { AdminCoursesPage } from '@/pages/admin-courses'
 import { AdminTasksPage } from '@/pages/admin-tasks'
@@ -68,6 +69,7 @@ export function AppRoutes() {
         <Route element={<AdminShell />}>
           <Route path="admin" element={<AdminPage />} />
           <Route path="admin/exams/:examId" element={<AdminExamPage />} />
+          <Route path="admin/assets" element={<AdminAssetsPage />} />
           <Route path="admin/categories" element={<AdminCategoriesPage />} />
           <Route path="admin/courses" element={<AdminCoursesPage />} />
           <Route path="admin/tasks" element={<AdminTasksPage />} />

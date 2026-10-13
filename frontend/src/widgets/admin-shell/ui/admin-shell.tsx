@@ -1,4 +1,4 @@
-import { BookOpen, FolderTree, GraduationCap, Layers, ListChecks, LogOut, Menu, User as UserIcon, Users, X, type LucideIcon } from 'lucide-react'
+import { BookOpen, FolderTree, Paperclip, GraduationCap, Layers, ListChecks, LogOut, Menu, User as UserIcon, Users, X, type LucideIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { cn } from '@/shared/lib/cn'
@@ -20,6 +20,7 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
     { to: '/admin', label: t('nav.exams'), icon: BookOpen, active: pathname === '/admin' || pathname.startsWith('/admin/exams') },
     { to: '/admin/categories', label: t('nav.categories'), icon: FolderTree },
     { to: '/admin/tasks', label: t('nav.tasks'), icon: ListChecks },
+    { to: '/admin/assets', label: t('nav.assets'), icon: Paperclip },
     { to: '/admin/courses', label: t('nav.courses'), icon: Layers },
     { to: '/admin/users', label: t('nav.users'), icon: Users },
   ]
