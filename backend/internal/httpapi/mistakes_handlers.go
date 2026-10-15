@@ -21,6 +21,8 @@ type MistakesPage struct {
 	Items []Mistake `json:"items"`
 	// Total is the number of tasks with at least one mistake, across the whole history.
 	Total int `json:"total"`
+	// PracticeSize is how many tasks with mistakes it takes to work on them (and how long that lesson is).
+	PracticeSize int `json:"practiceSize"`
 }
 
 // myMistakes lists the learner's tasks with mistakes, most mistakes first. It reads the whole answer history (never
@@ -33,21 +35,9 @@ func (s *Server) myMistakes(w http.ResponseWriter, r *http.Request) {
 	}
 	c, _ := claims(r)
 
-	rows, err := s.pool.Query(r.Context(), `
+	rows, err := s.pool.Query(r.Context(), mistakesCTE+`
 		SELECT `+taskColumns+`, m.mistakes, m.answered, m.last_at, m.last_selected, count(*) OVER ()
-		FROM (
-			SELECT aa.task_id,
-			       count(*) FILTER (WHERE aa.selected_index <> t.correct_index)::int AS mistakes,
-			       count(*)::int AS answered,
-			       max(aa.answered_at) FILTER (WHERE aa.selected_index <> t.correct_index) AS last_at,
-			       (array_agg(aa.selected_index ORDER BY aa.answered_at DESC) FILTER (WHERE aa.selected_index <> t.correct_index))[1] AS last_selected
-			FROM attempt_answers aa
-			JOIN attempts a ON a.id = aa.attempt_id
-			JOIN tasks t ON t.id = aa.task_id
-			WHERE a.user_id = $1 AND (a.status = 'completed' OR a.mode = 'training')
-			GROUP BY aa.task_id, t.correct_index
-			HAVING count(*) FILTER (WHERE aa.selected_index <> t.correct_index) > 0
-		) m
+		FROM m
 		JOIN tasks t ON t.id = m.task_id
 		ORDER BY m.mistakes DESC, m.last_at DESC, t.id
 		LIMIT $2 OFFSET $3`, c.UserID, limit, offset)
@@ -76,18 +66,11 @@ func (s *Server) myMistakes(w http.ResponseWriter, r *http.Request) {
 	}
 	// An offset past the end returns no rows, so the total has to come from its own query.
 	if len(page.Items) == 0 && offset > 0 {
-		if err := s.pool.QueryRow(r.Context(), `
-			SELECT count(*) FROM (
-				SELECT 1 FROM attempt_answers aa
-				JOIN attempts a ON a.id = aa.attempt_id
-				JOIN tasks t ON t.id = aa.task_id
-				WHERE a.user_id = $1 AND (a.status = 'completed' OR a.mode = 'training')
-				GROUP BY aa.task_id, t.correct_index
-				HAVING count(*) FILTER (WHERE aa.selected_index <> t.correct_index) > 0
-			) x`, c.UserID).Scan(&page.Total); err != nil {
+		if err := s.pool.QueryRow(r.Context(), mistakesCTE+` SELECT count(*) FROM m`, c.UserID).Scan(&page.Total); err != nil {
 			fail(w, err)
 			return
 		}
 	}
+	page.PracticeSize = practiceSize
 	writeJSON(w, http.StatusOK, page)
 }

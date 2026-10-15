@@ -62,6 +62,7 @@ func New(pool *pgxpool.Pool, tokens *auth.Tokens, cookieSecure bool) http.Handle
 				r.Get("/me/attempts", s.myAttempts)
 				r.Get("/me/streak", s.myStreak)
 				r.Get("/me/mistakes", s.myMistakes)
+				r.Post("/me/mistakes/practice", s.startMistakesPractice)
 				r.Post("/lessons/{lessonID}/attempts", s.startAttempt)
 				r.Get("/attempts/{attemptID}", s.getAttempt)
 				r.Put("/attempts/{attemptID}/answers/{taskID}", s.saveAnswer)

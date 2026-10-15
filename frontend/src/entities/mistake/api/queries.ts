@@ -2,6 +2,9 @@ import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-qu
 import { api, unwrap } from '@/shared/api'
 import { useAuth } from '@/entities/user'
 
+/** Used when the server does not say (an older backend): a work-on-mistakes lesson has this many tasks. */
+const DEFAULT_PRACTICE_SIZE = 10
+
 const fetchPage = (limit: number, offset: number) => unwrap(api.GET('/me/mistakes', { params: { query: { limit, offset } } }))
 
 /** One page of the learner's mistakes (desktop, with page numbers). Always refetched on entering the page: new mistakes appear after every lesson. */
@@ -26,6 +29,21 @@ export function useMistakesInfinite(pageSize: number) {
     getNextPageParam: (last, all) => {
       const loaded = all.reduce((n, p) => n + p.items.length, 0)
       return last.items.length > 0 && loaded < last.total ? loaded : undefined
+    },
+    enabled: !!user,
+    staleTime: 0,
+  })
+}
+
+/** How many tasks have mistakes, and how many it takes to work on them: decides whether the "work on mistakes" button shows. */
+export function useMistakesSummary() {
+  const { user } = useAuth()
+  return useQuery({
+    queryKey: ['mistakes', user?.id, 'summary'],
+    queryFn: async () => {
+      const p = await fetchPage(1, 0)
+      const practiceSize = Number.isInteger(p.practiceSize) && p.practiceSize > 0 ? p.practiceSize : DEFAULT_PRACTICE_SIZE
+      return { total: p.total, practiceSize }
     },
     enabled: !!user,
     staleTime: 0,

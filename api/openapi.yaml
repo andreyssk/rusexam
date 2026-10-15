@@ -258,12 +258,13 @@ components:
 
     MistakesPage:
       type: object
-      required: [items, total]
+      required: [items, total, practiceSize]
       properties:
         items:
           type: array
           items: { $ref: '#/components/schemas/Mistake' }
-        total: { type: integer, description: Tasks with at least one mistake, across the whole history. }
+        total: { type: integer, description: Tasks with at least one mistake left, across the whole history. }
+        practiceSize: { type: integer, description: How many tasks with mistakes it takes to work on them, and how long that lesson is. }
 
     Settings:
       type: object
@@ -328,10 +329,11 @@ components:
 
     Attempt:
       type: object
-      required: [id, lessonId, lessonTitleRu, lessonTitleEn, mode, status, startedAt, preserveOrder]
+      required: [id, lessonId, kind, lessonTitleRu, lessonTitleEn, mode, status, startedAt, preserveOrder]
       properties:
         id: { type: integer, format: int64 }
-        lessonId: { type: integer, format: int64 }
+        lessonId: { type: integer, format: int64, nullable: true, description: Null for a work-on-mistakes attempt, which is not tied to a lesson. }
+        kind: { type: string, enum: [lesson, mistakes], description: 'mistakes: the tasks were picked from the learner''s mistakes.' }
         lessonTitleRu: { type: string }
         lessonTitleEn: { type: string }
         mode: { $ref: '#/components/schemas/Mode' }
@@ -495,6 +497,22 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/MistakesPage' }
+        default: { $ref: '#/components/responses/Error' }
+
+  /me/mistakes/practice:
+    post:
+      operationId: startMistakesPractice
+      description: >
+        Starts a work-on-mistakes lesson: practiceSize tasks picked at random from the learner's mistakes, those with
+        more mistakes more likely. Fails with 409 while the learner has fewer than practiceSize tasks with mistakes.
+        When it is finished, each task done right takes one mistake off its counter.
+      security: [{ bearer: [] }]
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Attempt' }
         default: { $ref: '#/components/responses/Error' }
 
   /me/attempts:

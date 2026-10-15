@@ -125,8 +125,13 @@ type Lesson struct {
 }
 
 type Attempt struct {
-	ID              int64      `json:"id"`
-	LessonID        int64      `json:"lessonId"`
+	ID int64 `json:"id"`
+	// LessonID is null for a "work on mistakes" attempt, which is not tied to a lesson.
+	LessonID *int64 `json:"lessonId"`
+	// Kind is "lesson" or "mistakes" (the tasks were picked from the user's mistakes).
+	Kind string `json:"kind"`
+	// UserID is set internally (not sent to clients).
+	UserID          int64      `json:"-"`
 	LessonTitleRu   string     `json:"lessonTitleRu"`
 	LessonTitleEn   string     `json:"lessonTitleEn"`
 	Mode            string     `json:"mode"`

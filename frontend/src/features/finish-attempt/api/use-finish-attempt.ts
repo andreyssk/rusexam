@@ -27,6 +27,7 @@ export function useFinishAttempt(attemptId: number) {
       void qc.invalidateQueries({ queryKey: ['lessons'] })
       void qc.invalidateQueries({ queryKey: ['my-attempts'] })
       void qc.invalidateQueries({ queryKey: ['streak'] })
+      void qc.invalidateQueries({ queryKey: ['mistakes'] })
       navigate(redirectTo ?? `/attempts/${attemptId}/result`, { replace: true })
     },
   })

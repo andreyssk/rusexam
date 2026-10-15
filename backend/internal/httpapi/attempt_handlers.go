@@ -10,13 +10,15 @@ import (
 const maxDurationSeconds = 7 * 24 * 3600
 
 const attemptSelect = `
-SELECT a.id, a.lesson_id, e.title_ru, e.title_en, a.mode, a.status, a.started_at, a.finished_at,
-       a.duration_seconds, a.correct_count, a.total_count, a.score_percent::float8, e.preserve_order
-FROM attempts a JOIN lessons e ON e.id = a.lesson_id`
+SELECT a.id, a.lesson_id, a.kind, a.user_id,
+       COALESCE(e.title_ru, 'Работа над ошибками'), COALESCE(e.title_en, 'Work on mistakes'),
+       a.mode, a.status, a.started_at, a.finished_at,
+       a.duration_seconds, a.correct_count, a.total_count, a.score_percent::float8, COALESCE(e.preserve_order, false)
+FROM attempts a LEFT JOIN lessons e ON e.id = a.lesson_id`
 
 func scanAttempt(row pgx.Row) (Attempt, error) {
 	var a Attempt
-	err := row.Scan(&a.ID, &a.LessonID, &a.LessonTitleRu, &a.LessonTitleEn, &a.Mode, &a.Status, &a.StartedAt,
+	err := row.Scan(&a.ID, &a.LessonID, &a.Kind, &a.UserID, &a.LessonTitleRu, &a.LessonTitleEn, &a.Mode, &a.Status, &a.StartedAt,
 		&a.FinishedAt, &a.DurationSeconds, &a.CorrectCount, &a.TotalCount, &a.ScorePercent, &a.PreserveOrder)
 	return a, err
 }
@@ -118,6 +120,33 @@ func (s *Server) startAttempt(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, a)
 }
 
+// loadAttemptTasks returns the attempt's tasks in order, including answers; callers hide what they must.
+// A lesson attempt plays the lesson's tasks; a "work on mistakes" attempt plays the tasks picked for it.
+func loadAttemptTasks(ctx context.Context, q querier, a Attempt) ([]Task, error) {
+	if a.Kind != "mistakes" {
+		if a.LessonID == nil {
+			return []Task{}, nil
+		}
+		return loadTasks(ctx, q, *a.LessonID)
+	}
+	rows, err := q.Query(ctx, `SELECT `+taskColumns+`
+		FROM attempt_tasks at JOIN tasks t ON t.id = at.task_id
+		WHERE at.attempt_id = $1 ORDER BY at.position, t.id`, a.ID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	tasks := []Task{}
+	for rows.Next() {
+		t, err := scanTask(rows)
+		if err != nil {
+			return nil, err
+		}
+		tasks = append(tasks, t)
+	}
+	return tasks, rows.Err()
+}
+
 type savedAnswer struct {
 	taskID   int64
 	selected int
@@ -152,7 +181,7 @@ func (s *Server) getAttempt(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	full, err := loadTasks(r.Context(), s.pool, a.LessonID)
+	full, err := loadAttemptTasks(r.Context(), s.pool, a)
 	if err != nil {
 		fail(w, err)
 		return
@@ -214,9 +243,11 @@ func (s *Server) saveAnswer(w http.ResponseWriter, r *http.Request) {
 	var ci int
 	err := s.pool.QueryRow(r.Context(),
 		`SELECT t.id, t.options, t.correct_index, t.explanation
-		 FROM tasks t JOIN lesson_tasks et ON et.task_id = t.id
-		 WHERE t.id = $1 AND et.lesson_id = $2`,
-		taskID, a.LessonID).Scan(&t.ID, &t.Options, &ci, &t.Explanation)
+		 FROM tasks t
+		 WHERE t.id = $1 AND (
+		       ($2 = 'mistakes' AND EXISTS (SELECT 1 FROM attempt_tasks at WHERE at.attempt_id = $3 AND at.task_id = t.id))
+		    OR ($2 = 'lesson' AND EXISTS (SELECT 1 FROM lesson_tasks et WHERE et.lesson_id = $4 AND et.task_id = t.id)))`,
+		taskID, a.Kind, a.ID, a.LessonID).Scan(&t.ID, &t.Options, &ci, &t.Explanation)
 	if err != nil {
 		fail(w, err)
 		return
@@ -271,27 +302,48 @@ func (s *Server) finishAttempt(w http.ResponseWriter, r *http.Request) {
 	if in.DurationSeconds > maxDurationSeconds {
 		in.DurationSeconds = maxDurationSeconds
 	}
-	// Unanswered tasks count as incorrect; the score is computed once, here.
-	tag, err := s.pool.Exec(r.Context(), `
-		WITH c AS (
+	// Unanswered tasks count as incorrect; the score is computed once, here. Finishing a "work on mistakes" attempt
+	// also takes a mistake off every task that was done right, in the same transaction.
+	ctx := r.Context()
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		fail(w, err)
+		return
+	}
+	defer tx.Rollback(ctx) //nolint:errcheck
+	tag, err := tx.Exec(ctx, `
+		WITH ids AS (
+			SELECT task_id FROM lesson_tasks WHERE $2::text = 'lesson' AND lesson_id = $4
+			UNION ALL
+			SELECT task_id FROM attempt_tasks WHERE $2::text = 'mistakes' AND attempt_id = $1
+		), c AS (
 			SELECT count(t.id)::int AS total,
 			       count(*) FILTER (WHERE aa.selected_index = t.correct_index)::int AS correct
-			FROM lesson_tasks et
-			JOIN tasks t ON t.id = et.task_id
+			FROM ids
+			JOIN tasks t ON t.id = ids.task_id
 			LEFT JOIN attempt_answers aa ON aa.task_id = t.id AND aa.attempt_id = $1
-			WHERE et.lesson_id = $2
 		)
 		UPDATE attempts SET status = 'completed', finished_at = now(), duration_seconds = $3,
 		       correct_count = c.correct, total_count = c.total,
 		       score_percent = CASE WHEN c.total = 0 THEN 0 ELSE round(c.correct * 100.0 / c.total, 2) END
 		FROM c WHERE attempts.id = $1 AND attempts.status = 'in_progress'`,
-		a.ID, a.LessonID, in.DurationSeconds)
+		a.ID, a.Kind, in.DurationSeconds, a.LessonID)
 	if err != nil {
 		fail(w, err)
 		return
 	}
 	if tag.RowsAffected() == 0 {
 		writeError(w, http.StatusConflict, "attempt is already finished")
+		return
+	}
+	if a.Kind == "mistakes" {
+		if err := creditMistakes(ctx, tx, a); err != nil {
+			fail(w, err)
+			return
+		}
+	}
+	if err := tx.Commit(ctx); err != nil {
+		fail(w, err)
 		return
 	}
 	s.writeResult(w, r, a.ID)
@@ -315,7 +367,7 @@ func (s *Server) writeResult(w http.ResponseWriter, r *http.Request, attemptID i
 		fail(w, err)
 		return
 	}
-	tasks, err := loadTasks(r.Context(), s.pool, a.LessonID)
+	tasks, err := loadAttemptTasks(r.Context(), s.pool, a)
 	if err != nil {
 		fail(w, err)
 		return

@@ -105,6 +105,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me/mistakes/practice": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Starts a work-on-mistakes lesson: practiceSize tasks picked at random from the learner's mistakes, those with more mistakes more likely. Fails with 409 while the learner has fewer than practiceSize tasks with mistakes. When it is finished, each task done right takes one mistake off its counter. */
+        post: operations["startMistakesPractice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me/attempts": {
         parameters: {
             query?: never;
@@ -875,8 +892,10 @@ export interface components {
         };
         MistakesPage: {
             items: components["schemas"]["Mistake"][];
-            /** @description Tasks with at least one mistake */
+            /** @description Tasks with at least one mistake left */
             total: number;
+            /** @description How many tasks with mistakes it takes to work on them */
+            practiceSize: number;
         };
         Settings: {
             allowSignups: boolean;
@@ -939,8 +958,16 @@ export interface components {
         Attempt: {
             /** Format: int64 */
             id: number;
-            /** Format: int64 */
-            lessonId: number;
+            /**
+             * Format: int64
+             * @description Null for a work-on-mistakes attempt
+             */
+            lessonId: number | null;
+            /**
+             * @description mistakes: the tasks were picked from the learner's mistakes.
+             * @enum {string}
+             */
+            kind: "lesson" | "mistakes";
             lessonTitleRu: string;
             lessonTitleEn: string;
             mode: components["schemas"]["Mode"];
@@ -1171,6 +1198,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MistakesPage"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    startMistakesPractice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Attempt"];
                 };
             };
             default: components["responses"]["Error"];

@@ -7,6 +7,7 @@ import { Button } from '@/shared/ui/button'
 import { Spinner } from '@/shared/ui/spinner'
 import { LoadingSplash } from '@/shared/ui/splash'
 import { ErrorMessage } from '@/shared/ui/states'
+import { useStartMistakesPractice } from '@/entities/mistake'
 import { useAuth } from '@/entities/user'
 
 function useStartAttempt(lessonId: number) {
@@ -22,13 +23,18 @@ function useStartAttempt(lessonId: number) {
   })
 }
 
-/** Starts a fresh attempt of the same lesson in the same mode (shown on the results page). */
-export function RetryAttempt({ lessonId, mode, className }: { lessonId: number; mode: Mode; className?: string }) {
+/**
+ * Starts a fresh attempt like the one on the results page: the same lesson in the same mode, or, for a work-on-mistakes
+ * lesson (no lesson id), a new set of tasks picked from the learner's mistakes.
+ */
+export function RetryAttempt({ lessonId, mode, className }: { lessonId: number | null; mode: Mode; className?: string }) {
   const { t } = useI18n()
-  const start = useStartAttempt(lessonId)
+  const lesson = useStartAttempt(lessonId ?? 0)
+  const mistakes = useStartMistakesPractice()
+  const start = lessonId == null ? mistakes : lesson
   return (
     <div className="space-y-2">
-      <Button className={className} loading={start.isPending} onClick={() => start.mutate(mode)}>
+      <Button className={className} loading={start.isPending} onClick={() => (lessonId == null ? mistakes.mutate() : lesson.mutate(mode))}>
         <RotateCcw size={16} className="shrink-0 max-[400px]:hidden" /> {t('result.retry')}
       </Button>
       {start.isError && <ErrorMessage error={start.error} />}
