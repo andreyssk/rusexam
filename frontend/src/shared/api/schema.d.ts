@@ -580,6 +580,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/users/{userID}/attempts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userID: number;
+            };
+            cookie?: never;
+        };
+        get: operations["adminUserHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/attempts/{attemptID}/result": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                attemptID: components["parameters"]["AttemptID"];
+            };
+            cookie?: never;
+        };
+        /** @description A finished attempt of any user, with the answers they gave. 409 while it is still in progress. */
+        get: operations["adminAttemptResult"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/users/{userID}/blocked": {
         parameters: {
             query?: never;
@@ -780,6 +817,11 @@ export interface components {
             /** Format: date-time */
             createdAt: string;
             completedAttempts: number;
+        };
+        /** @description A user and their attempts, newest first (what the user sees under History). */
+        UserHistory: {
+            user: components["schemas"]["AdminUser"];
+            attempts: components["schemas"]["Attempt"][];
         };
         Settings: {
             allowSignups: boolean;
@@ -1954,6 +1996,52 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AdminUser"][];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    adminUserHistory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userID: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserHistory"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    adminAttemptResult: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                attemptID: components["parameters"]["AttemptID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Result"];
                 };
             };
             default: components["responses"]["Error"];

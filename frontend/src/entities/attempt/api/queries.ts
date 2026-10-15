@@ -11,11 +11,23 @@ export function useAttempt(id: number) {
   })
 }
 
-export function useResult(id: number) {
+/** A finished attempt's result. With `admin`, any user's attempt (for the admin's view of their history). */
+export function useResult(id: number, admin = false) {
   return useQuery({
-    queryKey: ['result', id],
-    queryFn: () => unwrap(api.GET('/attempts/{attemptID}/result', { params: { path: { attemptID: id } } })),
+    queryKey: [admin ? 'admin-result' : 'result', id],
+    queryFn: () =>
+      admin
+        ? unwrap(api.GET('/admin/attempts/{attemptID}/result', { params: { path: { attemptID: id } } }))
+        : unwrap(api.GET('/attempts/{attemptID}/result', { params: { path: { attemptID: id } } })),
     staleTime: Infinity,
+  })
+}
+
+/** Admin: one user and their attempts. */
+export function useUserHistory(userId: number) {
+  return useQuery({
+    queryKey: ['user-history', userId],
+    queryFn: () => unwrap(api.GET('/admin/users/{userID}/attempts', { params: { path: { userID: userId } } })),
   })
 }
 

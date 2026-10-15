@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { cn } from '@/shared/lib/cn'
 import { formatDuration, formatPercent } from '@/shared/lib/format'
 import { useI18n } from '@/shared/lib/i18n'
@@ -9,9 +9,11 @@ import { ErrorMessage, Loading } from '@/shared/ui/states'
 import { useResult } from '@/entities/attempt'
 import { RetryAttempt } from '@/features/start-attempt'
 
-export function ResultSummary({ attemptId }: { attemptId: number }) {
+/** `admin`: an admin looking at someone else's finished attempt, so no retry buttons, and a way back to where they came from. */
+export function ResultSummary({ attemptId, admin }: { attemptId: number; admin?: boolean }) {
   const { t, pick } = useI18n()
-  const { data, isPending, error } = useResult(attemptId)
+  const navigate = useNavigate()
+  const { data, isPending, error } = useResult(attemptId, admin)
 
   if (isPending) return <Loading />
   if (error) return <ErrorMessage error={error} />
@@ -44,12 +46,14 @@ export function ResultSummary({ attemptId }: { attemptId: number }) {
             </div>
           </dl>
           {/* Its own full-width row, split evenly between the two buttons. */}
-          <div className="grid grid-cols-2 items-start gap-2 sm:col-span-full">
-            <RetryAttempt lessonId={attempt.lessonId} mode={attempt.mode} className="w-full whitespace-nowrap px-2 max-sm:text-xs sm:px-5" />
-            <Button variant="outline" className="w-full whitespace-nowrap px-2 max-sm:text-xs sm:px-5" asChild>
-              <Link to="/">{t('result.toLessons')}</Link>
-            </Button>
-          </div>
+          {!admin && (
+            <div className="grid grid-cols-2 items-start gap-2 sm:col-span-full">
+              <RetryAttempt lessonId={attempt.lessonId} mode={attempt.mode} className="w-full whitespace-nowrap px-2 max-sm:text-xs sm:px-5" />
+              <Button variant="outline" className="w-full whitespace-nowrap px-2 max-sm:text-xs sm:px-5" asChild>
+                <Link to="/">{t('result.toLessons')}</Link>
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -86,9 +90,15 @@ export function ResultSummary({ attemptId }: { attemptId: number }) {
         })}
       </section>
 
-      <Button variant="ghost" asChild>
-        <Link to="/">{t('result.backHome')}</Link>
-      </Button>
+      {admin ? (
+        <Button variant="ghost" onClick={() => navigate(-1)}>
+          ← {t('users.backToHistory')}
+        </Button>
+      ) : (
+        <Button variant="ghost" asChild>
+          <Link to="/">{t('result.backHome')}</Link>
+        </Button>
+      )}
     </div>
   )
 }

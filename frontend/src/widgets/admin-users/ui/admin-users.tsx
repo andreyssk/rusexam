@@ -1,5 +1,6 @@
-import { Copy, KeyRound } from 'lucide-react'
+import { Copy, History, KeyRound } from 'lucide-react'
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import type { AdminUser } from '@/shared/api'
 import { cn } from '@/shared/lib/cn'
 import { formatDate } from '@/shared/lib/format'
@@ -130,6 +131,11 @@ export function AdminUsers() {
                     </div>
                     {!isAdmin && (
                       <div className="flex flex-wrap gap-2">
+                        <Button variant="outline" size="sm" asChild>
+                          <Link to={`/admin/users/${u.id}`}>
+                            <History size={14} /> {t('users.history')}
+                          </Link>
+                        </Button>
                         <Button
                           variant="outline"
                           size="sm"

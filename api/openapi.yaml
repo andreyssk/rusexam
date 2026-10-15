@@ -235,6 +235,16 @@ components:
         createdAt: { type: string, format: date-time }
         completedAttempts: { type: integer }
 
+    UserHistory:
+      description: A user and their attempts, newest first (what the user sees under History).
+      type: object
+      required: [user, attempts]
+      properties:
+        user: { $ref: '#/components/schemas/AdminUser' }
+        attempts:
+          type: array
+          items: { $ref: '#/components/schemas/Attempt' }
+
     Settings:
       type: object
       required: [allowSignups]
@@ -1081,6 +1091,38 @@ paths:
               schema:
                 type: array
                 items: { $ref: '#/components/schemas/AdminUser' }
+        default: { $ref: '#/components/responses/Error' }
+
+  /admin/users/{userID}/attempts:
+    parameters:
+      - name: userID
+        in: path
+        required: true
+        schema: { type: integer, format: int64 }
+    get:
+      operationId: adminUserHistory
+      security: [{ bearer: [] }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserHistory' }
+        default: { $ref: '#/components/responses/Error' }
+
+  /admin/attempts/{attemptID}/result:
+    parameters:
+      - $ref: '#/components/parameters/AttemptID'
+    get:
+      operationId: adminAttemptResult
+      description: A finished attempt of any user, with the answers they gave. 409 while it is still in progress.
+      security: [{ bearer: [] }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Result' }
         default: { $ref: '#/components/responses/Error' }
 
   /admin/users/{userID}/blocked:

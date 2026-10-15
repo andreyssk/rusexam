@@ -36,24 +36,28 @@ func (s *Server) ownedAttempt(w http.ResponseWriter, r *http.Request) (Attempt, 
 	return a, true
 }
 
-func (s *Server) myAttempts(w http.ResponseWriter, r *http.Request) {
-	c, _ := claims(r)
-	rows, err := s.pool.Query(r.Context(), attemptSelect+` WHERE a.user_id = $1 ORDER BY a.started_at DESC LIMIT 100`, c.UserID)
+// queryAttempts lists a user's attempts, newest first.
+func (s *Server) queryAttempts(r *http.Request, userID int64) ([]Attempt, error) {
+	rows, err := s.pool.Query(r.Context(), attemptSelect+` WHERE a.user_id = $1 ORDER BY a.started_at DESC LIMIT 100`, userID)
 	if err != nil {
-		fail(w, err)
-		return
+		return nil, err
 	}
 	defer rows.Close()
 	out := []Attempt{}
 	for rows.Next() {
 		a, err := scanAttempt(rows)
 		if err != nil {
-			fail(w, err)
-			return
+			return nil, err
 		}
 		out = append(out, a)
 	}
-	if err := rows.Err(); err != nil {
+	return out, rows.Err()
+}
+
+func (s *Server) myAttempts(w http.ResponseWriter, r *http.Request) {
+	c, _ := claims(r)
+	out, err := s.queryAttempts(r, c.UserID)
+	if err != nil {
 		fail(w, err)
 		return
 	}

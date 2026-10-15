@@ -11,6 +11,8 @@ import { AdminAssetsPage } from '@/pages/admin-assets'
 import { AdminCategoriesPage } from '@/pages/admin-categories'
 import { AdminCoursesPage } from '@/pages/admin-courses'
 import { AdminTasksPage } from '@/pages/admin-tasks'
+import { AdminAttemptPage } from '@/pages/admin-attempt'
+import { AdminUserHistoryPage } from '@/pages/admin-user-history'
 import { AdminUsersPage } from '@/pages/admin-users'
 import { AdminLessonPage } from '@/pages/admin-lesson'
 import { AttemptPage } from '@/pages/attempt'
@@ -78,6 +80,8 @@ export function AppRoutes() {
           <Route path="admin/courses" element={<AdminCoursesPage />} />
           <Route path="admin/tasks" element={<AdminTasksPage />} />
           <Route path="admin/users" element={<AdminUsersPage />} />
+          <Route path="admin/users/:userId" element={<AdminUserHistoryPage />} />
+          <Route path="admin/attempts/:attemptId" element={<AdminAttemptPage />} />
         </Route>
       </Route>
     </Routes>

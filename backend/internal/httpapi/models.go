@@ -186,6 +186,12 @@ type AdminUser struct {
 	CompletedAttempts int       `json:"completedAttempts"`
 }
 
+// UserHistory is a user together with their attempts, as an admin sees it.
+type UserHistory struct {
+	User     AdminUser `json:"user"`
+	Attempts []Attempt `json:"attempts"`
+}
+
 type Settings struct {
 	AllowSignups bool `json:"allowSignups"`
 }

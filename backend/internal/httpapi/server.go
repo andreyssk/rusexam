@@ -99,6 +99,8 @@ func New(pool *pgxpool.Pool, tokens *auth.Tokens, cookieSecure bool) http.Handle
 			r.Delete("/tasks/{taskID}", s.adminDeleteTask)
 
 			r.Get("/users", s.adminListUsers)
+			r.Get("/users/{userID}/attempts", s.adminUserHistory)
+			r.Get("/attempts/{attemptID}/result", s.adminAttemptResult)
 			r.Put("/users/{userID}/blocked", s.adminSetBlocked)
 			r.Post("/users/{userID}/reset-password", s.adminResetPassword)
 			r.Put("/settings", s.adminUpdateSettings)

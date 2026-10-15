@@ -2,8 +2,11 @@ package httpapi
 
 import (
 	"crypto/rand"
+	"errors"
 	"math/big"
 	"net/http"
+
+	"github.com/jackc/pgx/v5"
 
 	"rutest/internal/auth"
 )
@@ -145,4 +148,49 @@ func (s *Server) adminResetPassword(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Cache-Control", "no-store")
 	writeJSON(w, http.StatusOK, map[string]string{"temporaryPassword": temp})
+}
+
+// adminUserHistory lists one user's attempts (the same list the user sees under History).
+func (s *Server) adminUserHistory(w http.ResponseWriter, r *http.Request) {
+	id, ok := pathID(w, r, "userID")
+	if !ok {
+		return
+	}
+	var u AdminUser
+	err := s.pool.QueryRow(r.Context(), `
+		SELECT u.id, u.username, u.role, u.blocked_at IS NOT NULL, u.created_at,
+		       (SELECT count(*) FROM attempts a WHERE a.user_id = u.id AND a.status = 'completed')::int
+		FROM users u WHERE u.id = $1`, id).Scan(&u.ID, &u.Username, &u.Role, &u.Blocked, &u.CreatedAt, &u.CompletedAttempts)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			writeError(w, http.StatusNotFound, "user not found")
+			return
+		}
+		fail(w, err)
+		return
+	}
+	attempts, err := s.queryAttempts(r, id)
+	if err != nil {
+		fail(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, UserHistory{User: u, Attempts: attempts})
+}
+
+// adminAttemptResult shows any user's finished attempt, with the answers they gave.
+func (s *Server) adminAttemptResult(w http.ResponseWriter, r *http.Request) {
+	id, ok := pathID(w, r, "attemptID")
+	if !ok {
+		return
+	}
+	a, err := scanAttempt(s.pool.QueryRow(r.Context(), attemptSelect+` WHERE a.id = $1`, id))
+	if err != nil {
+		fail(w, err)
+		return
+	}
+	if a.Status != "completed" {
+		writeError(w, http.StatusConflict, "attempt is not finished yet")
+		return
+	}
+	s.writeResult(w, r, a.ID)
 }
