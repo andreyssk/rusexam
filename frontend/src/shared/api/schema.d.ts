@@ -88,6 +88,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me/mistakes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The learner's tasks with mistakes, most mistakes first, over the whole history (no attempt limit). Counts training answers and answers of finished lessons. */
+        get: operations["listMyMistakes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me/attempts": {
         parameters: {
             query?: never;
@@ -95,6 +112,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** @description A page of the learner's attempts, newest first, over the whole history. */
         get: operations["listMyAttempts"];
         put?: never;
         post?: never;
@@ -580,6 +598,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/users/{userID}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userID: number;
+            };
+            cookie?: never;
+        };
+        get: operations["adminGetUser"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/users/{userID}/attempts": {
         parameters: {
             query?: never;
@@ -589,7 +625,8 @@ export interface paths {
             };
             cookie?: never;
         };
-        get: operations["adminUserHistory"];
+        /** @description A page of one user's attempts (what the user sees under History), newest first. */
+        get: operations["adminUserAttempts"];
         put?: never;
         post?: never;
         delete?: never;
@@ -818,10 +855,28 @@ export interface components {
             createdAt: string;
             completedAttempts: number;
         };
-        /** @description A user and their attempts, newest first (what the user sees under History). */
-        UserHistory: {
-            user: components["schemas"]["AdminUser"];
-            attempts: components["schemas"]["Attempt"][];
+        /** @description One page of a user's attempts, newest first. There is no cap on the history. */
+        AttemptsPage: {
+            items: components["schemas"]["Attempt"][];
+            /** @description All the user's attempts. */
+            total: number;
+        };
+        /** @description A task the learner has answered wrongly. Answer fields are included; the learner has already seen them. */
+        Mistake: {
+            task: components["schemas"]["Task"];
+            /** @description In how many sessions the task was answered wrongly. */
+            mistakes: number;
+            /** @description In how many sessions the task was answered at all. */
+            answered: number;
+            /** Format: date-time */
+            lastMistakeAt: string;
+            /** @description The option chosen in the most recent wrong answer. */
+            lastSelectedIndex: number;
+        };
+        MistakesPage: {
+            items: components["schemas"]["Mistake"][];
+            /** @description Tasks with at least one mistake */
+            total: number;
         };
         Settings: {
             allowSignups: boolean;
@@ -1097,9 +1152,12 @@ export interface operations {
             default: components["responses"]["Error"];
         };
     };
-    listMyAttempts: {
+    listMyMistakes: {
         parameters: {
-            query?: never;
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1112,7 +1170,31 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Attempt"][];
+                    "application/json": components["schemas"]["MistakesPage"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    listMyAttempts: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttemptsPage"];
                 };
             };
             default: components["responses"]["Error"];
@@ -2001,7 +2083,7 @@ export interface operations {
             default: components["responses"]["Error"];
         };
     };
-    adminUserHistory: {
+    adminGetUser: {
         parameters: {
             query?: never;
             header?: never;
@@ -2018,7 +2100,33 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["UserHistory"];
+                    "application/json": components["schemas"]["AdminUser"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    adminUserAttempts: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                userID: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttemptsPage"];
                 };
             };
             default: components["responses"]["Error"];

@@ -20,6 +20,7 @@ import { ExamsPage } from '@/pages/exams'
 import { HistoryPage } from '@/pages/history'
 import { HomePage } from '@/pages/home'
 import { LoginPage } from '@/pages/login'
+import { MistakesPage } from '@/pages/mistakes'
 import { NotFoundPage } from '@/pages/not-found'
 import { ResultPage } from '@/pages/result'
 
@@ -66,6 +67,7 @@ export function AppRoutes() {
         <Route path="exams" element={<ExamsPage />} />
         <Route element={<RequireAuth role="learner" />}>
           <Route path="history" element={<HistoryPage />} />
+          <Route path="mistakes" element={<MistakesPage />} />
           <Route path="attempts/:attemptId" element={<AttemptPage />} />
           <Route path="attempts/:attemptId/result" element={<ResultPage />} />
         </Route>

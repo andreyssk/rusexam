@@ -186,10 +186,10 @@ type AdminUser struct {
 	CompletedAttempts int       `json:"completedAttempts"`
 }
 
-// UserHistory is a user together with their attempts, as an admin sees it.
-type UserHistory struct {
-	User     AdminUser `json:"user"`
-	Attempts []Attempt `json:"attempts"`
+// AttemptsPage is one page of a user's attempts, newest first; Total counts all of them.
+type AttemptsPage struct {
+	Items []Attempt `json:"items"`
+	Total int       `json:"total"`
 }
 
 type Settings struct {

@@ -235,15 +235,35 @@ components:
         createdAt: { type: string, format: date-time }
         completedAttempts: { type: integer }
 
-    UserHistory:
-      description: A user and their attempts, newest first (what the user sees under History).
+    AttemptsPage:
+      description: One page of a user's attempts, newest first. There is no cap on the history.
       type: object
-      required: [user, attempts]
+      required: [items, total]
       properties:
-        user: { $ref: '#/components/schemas/AdminUser' }
-        attempts:
+        items:
           type: array
           items: { $ref: '#/components/schemas/Attempt' }
+        total: { type: integer, description: All the user's attempts. }
+
+    Mistake:
+      description: A task the learner has answered wrongly. Answer fields are included; the learner has already seen them.
+      type: object
+      required: [task, mistakes, answered, lastMistakeAt, lastSelectedIndex]
+      properties:
+        task: { $ref: '#/components/schemas/Task' }
+        mistakes: { type: integer, description: In how many sessions the task was answered wrongly. }
+        answered: { type: integer, description: In how many sessions the task was answered at all. }
+        lastMistakeAt: { type: string, format: date-time }
+        lastSelectedIndex: { type: integer, description: The option chosen in the most recent wrong answer. }
+
+    MistakesPage:
+      type: object
+      required: [items, total]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/Mistake' }
+        total: { type: integer, description: Tasks with at least one mistake, across the whole history. }
 
     Settings:
       type: object
@@ -459,18 +479,38 @@ paths:
               schema: { $ref: '#/components/schemas/User' }
         default: { $ref: '#/components/responses/Error' }
 
-  /me/attempts:
+  /me/mistakes:
     get:
-      operationId: listMyAttempts
+      operationId: listMyMistakes
+      description: >
+        The learner's tasks with mistakes, most mistakes first, over the whole history (no attempt limit).
+        Counts training answers and answers of finished lessons.
       security: [{ bearer: [] }]
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
       responses:
         '200':
           description: OK
           content:
             application/json:
-              schema:
-                type: array
-                items: { $ref: '#/components/schemas/Attempt' }
+              schema: { $ref: '#/components/schemas/MistakesPage' }
+        default: { $ref: '#/components/responses/Error' }
+
+  /me/attempts:
+    get:
+      operationId: listMyAttempts
+      description: A page of the learner's attempts, newest first, over the whole history.
+      security: [{ bearer: [] }]
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AttemptsPage' }
         default: { $ref: '#/components/responses/Error' }
 
   /me/streak:
@@ -1093,6 +1133,23 @@ paths:
                 items: { $ref: '#/components/schemas/AdminUser' }
         default: { $ref: '#/components/responses/Error' }
 
+  /admin/users/{userID}:
+    parameters:
+      - name: userID
+        in: path
+        required: true
+        schema: { type: integer, format: int64 }
+    get:
+      operationId: adminGetUser
+      security: [{ bearer: [] }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminUser' }
+        default: { $ref: '#/components/responses/Error' }
+
   /admin/users/{userID}/attempts:
     parameters:
       - name: userID
@@ -1100,14 +1157,18 @@ paths:
         required: true
         schema: { type: integer, format: int64 }
     get:
-      operationId: adminUserHistory
+      operationId: adminUserAttempts
+      description: A page of one user's attempts (what the user sees under History), newest first.
       security: [{ bearer: [] }]
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
       responses:
         '200':
           description: OK
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/UserHistory' }
+              schema: { $ref: '#/components/schemas/AttemptsPage' }
         default: { $ref: '#/components/responses/Error' }
 
   /admin/attempts/{attemptID}/result:

@@ -1,4 +1,4 @@
-import { BookOpen, ClipboardCheck, Flame, GraduationCap, History, LogOut, Menu, User as UserIcon, X, type LucideIcon } from 'lucide-react'
+import { BookOpen, CircleX, ClipboardCheck, Flame, GraduationCap, History, LogOut, Menu, User as UserIcon, X, type LucideIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import { cn } from '@/shared/lib/cn'
@@ -31,8 +31,17 @@ function useNavItems(): NavItem[] {
   ]
 }
 
+/** The learner's Mistakes page: in the top menu on desktop and in the side drawer on phones (the bottom bar stays short). */
+function useMistakesItem(): NavItem | null {
+  const { t } = useI18n()
+  const { user } = useAuth()
+  return user && user.role !== 'admin' ? { to: '/mistakes', label: t('nav.mistakes'), icon: CircleX } : null
+}
+
 function NavLinks() {
-  return useNavItems().map((item) => (
+  const mistakes = useMistakesItem()
+  const items = useNavItems()
+  return (mistakes ? [...items, mistakes] : items).map((item) => (
     <NavLink key={item.to} to={item.to} end={item.end} className={({ isActive }) => link(isActive)}>
       {item.label}
     </NavLink>
@@ -97,6 +106,7 @@ export function Header() {
   const { user, logout } = useAuth()
   const location = useLocation()
   const [open, setOpen] = useState(false)
+  const mistakesItem = useMistakesItem()
 
   // Close the drawer after navigating, and on Escape.
   useEffect(() => setOpen(false), [location.pathname])
@@ -180,6 +190,22 @@ export function Header() {
               <X size={22} />
             </Button>
           </div>
+          {mistakesItem && (
+            <nav aria-label={t('nav.menu')} className="flex flex-col gap-1">
+              <NavLink
+                to={mistakesItem.to}
+                className={({ isActive }) =>
+                  cn(
+                    'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-extrabold uppercase tracking-wide',
+                    isActive ? 'bg-accent-soft text-accent' : 'text-muted-foreground hover:bg-muted',
+                  )
+                }
+              >
+                <mistakesItem.icon size={20} />
+                {mistakesItem.label}
+              </NavLink>
+            </nav>
+          )}
           <div className="mt-auto flex flex-col gap-3 border-t-2 pt-4">
             <div className="flex items-center justify-between gap-2">
               <span className="text-sm font-bold">{t('common.language')}</span>

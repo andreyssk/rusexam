@@ -36,32 +36,44 @@ func (s *Server) ownedAttempt(w http.ResponseWriter, r *http.Request) (Attempt, 
 	return a, true
 }
 
-// queryAttempts lists a user's attempts, newest first.
-func (s *Server) queryAttempts(r *http.Request, userID int64) ([]Attempt, error) {
-	rows, err := s.pool.Query(r.Context(), attemptSelect+` WHERE a.user_id = $1 ORDER BY a.started_at DESC LIMIT 100`, userID)
+// queryAttempts lists a page of a user's attempts, newest first, over the user's whole history (there is no cap),
+// together with how many attempts there are in all.
+func (s *Server) queryAttempts(r *http.Request, userID int64, limit, offset int) (AttemptsPage, error) {
+	rows, err := s.pool.Query(r.Context(),
+		attemptSelect+` WHERE a.user_id = $1 ORDER BY a.started_at DESC, a.id DESC LIMIT $2 OFFSET $3`, userID, limit, offset)
 	if err != nil {
-		return nil, err
+		return AttemptsPage{}, err
 	}
 	defer rows.Close()
-	out := []Attempt{}
+	page := AttemptsPage{Items: []Attempt{}}
 	for rows.Next() {
 		a, err := scanAttempt(rows)
 		if err != nil {
-			return nil, err
+			return AttemptsPage{}, err
 		}
-		out = append(out, a)
+		page.Items = append(page.Items, a)
 	}
-	return out, rows.Err()
+	if err := rows.Err(); err != nil {
+		return AttemptsPage{}, err
+	}
+	if err := s.pool.QueryRow(r.Context(), `SELECT count(*) FROM attempts WHERE user_id = $1`, userID).Scan(&page.Total); err != nil {
+		return AttemptsPage{}, err
+	}
+	return page, nil
 }
 
 func (s *Server) myAttempts(w http.ResponseWriter, r *http.Request) {
+	limit, offset, ok := pageParams(w, r, 20)
+	if !ok {
+		return
+	}
 	c, _ := claims(r)
-	out, err := s.queryAttempts(r, c.UserID)
+	page, err := s.queryAttempts(r, c.UserID, limit, offset)
 	if err != nil {
 		fail(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, out)
+	writeJSON(w, http.StatusOK, page)
 }
 
 func (s *Server) startAttempt(w http.ResponseWriter, r *http.Request) {

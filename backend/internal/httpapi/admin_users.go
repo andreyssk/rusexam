@@ -150,8 +150,8 @@ func (s *Server) adminResetPassword(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"temporaryPassword": temp})
 }
 
-// adminUserHistory lists one user's attempts (the same list the user sees under History).
-func (s *Server) adminUserHistory(w http.ResponseWriter, r *http.Request) {
+// adminGetUser returns one user, for the header of their history page.
+func (s *Server) adminGetUser(w http.ResponseWriter, r *http.Request) {
 	id, ok := pathID(w, r, "userID")
 	if !ok {
 		return
@@ -169,12 +169,34 @@ func (s *Server) adminUserHistory(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
-	attempts, err := s.queryAttempts(r, id)
+	writeJSON(w, http.StatusOK, u)
+}
+
+// adminUserAttempts lists a page of one user's attempts (the same list the user sees under History).
+func (s *Server) adminUserAttempts(w http.ResponseWriter, r *http.Request) {
+	id, ok := pathID(w, r, "userID")
+	if !ok {
+		return
+	}
+	limit, offset, ok := pageParams(w, r, 20)
+	if !ok {
+		return
+	}
+	var exists bool
+	if err := s.pool.QueryRow(r.Context(), `SELECT EXISTS (SELECT 1 FROM users WHERE id = $1)`, id).Scan(&exists); err != nil {
+		fail(w, err)
+		return
+	}
+	if !exists {
+		writeError(w, http.StatusNotFound, "user not found")
+		return
+	}
+	page, err := s.queryAttempts(r, id, limit, offset)
 	if err != nil {
 		fail(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, UserHistory{User: u, Attempts: attempts})
+	writeJSON(w, http.StatusOK, page)
 }
 
 // adminAttemptResult shows any user's finished attempt, with the answers they gave.
