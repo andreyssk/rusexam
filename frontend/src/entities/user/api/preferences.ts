@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef } from 'react'
 import { api, unwrap, type Preferences } from '@/shared/api'
 import { useAuth } from '../model/auth'
 
-const DEFAULTS: Preferences = { audioVolume: 0.5, audioSpeed: 1, collapsedCategories: [] }
+const DEFAULTS: Preferences = { audioVolume: 0.5, audioSpeed: 1, collapsedCategories: [], soundsEnabled: true }
 
 /**
  * The signed-in user's own settings, stored on their account so they follow them to any device.

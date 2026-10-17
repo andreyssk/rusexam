@@ -10,13 +10,15 @@ type Preferences struct {
 	AudioSpeed float64 `json:"audioSpeed"`
 	// CollapsedCategories are the lesson categories folded on the home page; 0 is the group of lessons without a category.
 	CollapsedCategories []int64 `json:"collapsedCategories"`
+	// SoundsEnabled turns the motivational sounds of a session on or off.
+	SoundsEnabled bool `json:"soundsEnabled"`
 }
 
 func (s *Server) getPreferences(w http.ResponseWriter, r *http.Request) {
 	c, _ := claims(r)
 	var p Preferences
 	if err := s.pool.QueryRow(r.Context(),
-		`SELECT audio_volume::float8, audio_speed::float8, collapsed_categories FROM users WHERE id = $1`, c.UserID).Scan(&p.AudioVolume, &p.AudioSpeed, &p.CollapsedCategories); err != nil {
+		`SELECT audio_volume::float8, audio_speed::float8, collapsed_categories, sounds_enabled FROM users WHERE id = $1`, c.UserID).Scan(&p.AudioVolume, &p.AudioSpeed, &p.CollapsedCategories, &p.SoundsEnabled); err != nil {
 		fail(w, err)
 		return
 	}
@@ -48,8 +50,8 @@ func (s *Server) updatePreferences(w http.ResponseWriter, r *http.Request) {
 	}
 	c, _ := claims(r)
 	if _, err := s.pool.Exec(r.Context(),
-		`UPDATE users SET audio_volume = $2, audio_speed = $3, collapsed_categories = $4 WHERE id = $1`,
-		c.UserID, in.AudioVolume, in.AudioSpeed, in.CollapsedCategories); err != nil {
+		`UPDATE users SET audio_volume = $2, audio_speed = $3, collapsed_categories = $4, sounds_enabled = $5 WHERE id = $1`,
+		c.UserID, in.AudioVolume, in.AudioSpeed, in.CollapsedCategories, in.SoundsEnabled); err != nil {
 		fail(w, err)
 		return
 	}

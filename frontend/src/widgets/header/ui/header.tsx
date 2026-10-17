@@ -1,4 +1,4 @@
-import { BookOpen, CircleX, ClipboardCheck, Flame, GraduationCap, History, LogOut, Menu, User as UserIcon, X, type LucideIcon } from 'lucide-react'
+import { BookOpen, CircleX, ClipboardCheck, Flame, GraduationCap, History, LogOut, Menu, Settings, User as UserIcon, X, type LucideIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import { cn } from '@/shared/lib/cn'
@@ -36,6 +36,13 @@ function useMistakesItem(): NavItem | null {
   const { t } = useI18n()
   const { user } = useAuth()
   return user && user.role !== 'admin' ? { to: '/mistakes', label: t('nav.mistakes'), icon: CircleX } : null
+}
+
+/** Settings: an icon next to the account on desktop, an item in the side drawer on phones. */
+function useSettingsItem(): NavItem | null {
+  const { t } = useI18n()
+  const { user } = useAuth()
+  return user && user.role !== 'admin' ? { to: '/settings', label: t('nav.settings'), icon: Settings } : null
 }
 
 function NavLinks() {
@@ -107,6 +114,7 @@ export function Header() {
   const location = useLocation()
   const [open, setOpen] = useState(false)
   const mistakesItem = useMistakesItem()
+  const settingsItem = useSettingsItem()
 
   // Close the drawer after navigating, and on Escape.
   useEffect(() => setOpen(false), [location.pathname])
@@ -154,6 +162,17 @@ export function Header() {
                 <UserIcon size={16} className="shrink-0 text-muted-foreground" />
                 <span className="truncate">{user.username}</span>
               </span>
+              {settingsItem && (
+                <span className="hidden md:inline-flex">
+                  <Tooltip label={settingsItem.label}>
+                    <Button variant="outline" size="icon" aria-label={settingsItem.label} asChild>
+                      <Link to={settingsItem.to}>
+                        <settingsItem.icon size={18} />
+                      </Link>
+                    </Button>
+                  </Tooltip>
+                </span>
+              )}
               <span className="hidden md:inline-flex">
                 <Tooltip label={t('nav.logout')}>
                   <Button variant="outline" size="icon" aria-label={t('nav.logout')} onClick={() => void logout()}>
@@ -190,10 +209,11 @@ export function Header() {
               <X size={22} />
             </Button>
           </div>
-          {mistakesItem && (
-            <nav aria-label={t('nav.menu')} className="flex flex-col gap-1">
+          <nav aria-label={t('nav.menu')} className="flex flex-col gap-1">
+            {[mistakesItem, settingsItem].filter((item) => item !== null).map((item) => (
               <NavLink
-                to={mistakesItem.to}
+                key={item.to}
+                to={item.to}
                 className={({ isActive }) =>
                   cn(
                     'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-extrabold uppercase tracking-wide',
@@ -201,11 +221,11 @@ export function Header() {
                   )
                 }
               >
-                <mistakesItem.icon size={20} />
-                {mistakesItem.label}
+                <item.icon size={20} />
+                {item.label}
               </NavLink>
-            </nav>
-          )}
+            ))}
+          </nav>
           <div className="mt-auto flex flex-col gap-3 border-t-2 pt-4">
             <div className="flex items-center justify-between gap-2">
               <span className="text-sm font-bold">{t('common.language')}</span>

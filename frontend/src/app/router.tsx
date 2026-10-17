@@ -10,6 +10,7 @@ import { AdminPage } from '@/pages/admin'
 import { AdminAssetsPage } from '@/pages/admin-assets'
 import { AdminCategoriesPage } from '@/pages/admin-categories'
 import { AdminCoursesPage } from '@/pages/admin-courses'
+import { AdminSoundsPage } from '@/pages/admin-sounds'
 import { AdminTasksPage } from '@/pages/admin-tasks'
 import { AdminAttemptPage } from '@/pages/admin-attempt'
 import { AdminUserHistoryPage } from '@/pages/admin-user-history'
@@ -23,6 +24,7 @@ import { LoginPage } from '@/pages/login'
 import { MistakesPage } from '@/pages/mistakes'
 import { NotFoundPage } from '@/pages/not-found'
 import { ResultPage } from '@/pages/result'
+import { SettingsPage } from '@/pages/settings'
 
 function Layout() {
   const { pathname } = useLocation()
@@ -67,6 +69,7 @@ export function AppRoutes() {
         <Route path="exams" element={<ExamsPage />} />
         <Route element={<RequireAuth role="learner" />}>
           <Route path="history" element={<HistoryPage />} />
+          <Route path="settings" element={<SettingsPage />} />
           <Route path="mistakes" element={<MistakesPage />} />
           <Route path="attempts/:attemptId" element={<AttemptPage />} />
           <Route path="attempts/:attemptId/result" element={<ResultPage />} />
@@ -78,6 +81,7 @@ export function AppRoutes() {
           <Route path="admin" element={<AdminPage />} />
           <Route path="admin/lessons/:lessonId" element={<AdminLessonPage />} />
           <Route path="admin/assets" element={<AdminAssetsPage />} />
+          <Route path="admin/sounds" element={<AdminSoundsPage />} />
           <Route path="admin/categories" element={<AdminCategoriesPage />} />
           <Route path="admin/courses" element={<AdminCoursesPage />} />
           <Route path="admin/tasks" element={<AdminTasksPage />} />

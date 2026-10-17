@@ -55,6 +55,8 @@ func New(pool *pgxpool.Pool, tokens *auth.Tokens, cookieSecure bool) http.Handle
 			r.Get("/me/preferences", s.getPreferences)
 			r.Put("/me/preferences", s.updatePreferences)
 			r.Get("/assets/{assetID}/file", s.getAssetFile)
+			r.Get("/sounds", s.listSounds)
+			r.Get("/sounds/{slot}/file", s.getSoundFile)
 
 			// Taking lessons is for learners only; admins manage content and users.
 			r.Group(func(r chi.Router) {
@@ -85,6 +87,9 @@ func New(pool *pgxpool.Pool, tokens *auth.Tokens, cookieSecure bool) http.Handle
 			r.Post("/assets", s.adminCreateAsset)
 			r.Put("/assets/{assetID}", s.adminUpdateAsset)
 			r.Delete("/assets/{assetID}", s.adminDeleteAsset)
+
+			r.Put("/sounds/{slot}", s.adminPutSound)
+			r.Delete("/sounds/{slot}", s.adminDeleteSound)
 
 			r.Post("/lessons", s.adminCreateLesson)
 			r.Put("/lessons/{lessonID}", s.adminUpdateLesson)

@@ -4,11 +4,13 @@ import { api, unwrap, type Streak } from '@/shared/api'
 import { streakUpdate } from '@/shared/lib/streak-update'
 import { useAuth } from '@/entities/user'
 import { clearTimer } from '@/entities/attempt'
+import { usePlaySound } from '@/entities/sound'
 
 export function useFinishAttempt(attemptId: number) {
   const qc = useQueryClient()
   const navigate = useNavigate()
   const { user } = useAuth()
+  const play = usePlaySound()
   return useMutation({
     mutationFn: ({ durationSeconds }: { durationSeconds: number; redirectTo?: string }) =>
       unwrap(
@@ -19,6 +21,8 @@ export function useFinishAttempt(attemptId: number) {
       ),
     onSuccess: (result, { redirectTo }) => {
       clearTimer(attemptId)
+      const { correctCount, totalCount } = result.attempt
+      play(...(totalCount && correctCount === totalCount ? (['finish_perfect', 'finish'] as const) : (['finish'] as const)))
       // The first lesson finished today extends the streak by one: queue the celebration for the screen that comes next.
       const before = qc.getQueryData<Streak>(['streak', user?.id])
       if (before && !before.doneToday) streakUpdate.show(before.current, before.current + 1)

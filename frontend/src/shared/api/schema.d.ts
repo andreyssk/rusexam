@@ -53,6 +53,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sounds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The slots that have a sound. */
+        get: operations["listSounds"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sounds/{slot}/file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slot: components["schemas"]["SoundSlot"];
+            };
+            cookie?: never;
+        };
+        get: operations["getSoundFile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/assets/{assetID}/file": {
         parameters: {
             query?: never;
@@ -511,6 +546,25 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/sounds/{slot}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slot: components["schemas"]["SoundSlot"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** @description Sets or replaces the sound of a slot. */
+        put: operations["adminPutSound"];
+        post?: never;
+        delete: operations["adminDeleteSound"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/assets": {
         parameters: {
             query?: never;
@@ -763,6 +817,26 @@ export interface components {
             audioSpeed: number;
             /** @description Lesson categories folded on the home page; 0 is the group of lessons without a category. */
             collapsedCategories: number[];
+            /** @description Whether the motivational sounds of a session play. */
+            soundsEnabled: boolean;
+        };
+        /**
+         * @description A moment of a session. row_N is the Nth correct answer in a row; finish_perfect is a session with every answer correct.
+         * @enum {string}
+         */
+        SoundSlot: "success" | "error" | "row_5" | "row_10" | "row_15" | "finish" | "finish_perfect";
+        Sound: {
+            slot: components["schemas"]["SoundSlot"];
+            size: number;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        SoundForm: {
+            /**
+             * Format: binary
+             * @description An mp3 of at most 1 MB.
+             */
+            file: string;
         };
         /** @description A stored file (audio or image) that tasks can use. */
         Asset: {
@@ -1130,6 +1204,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Preferences"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    listSounds: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Sound"][];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getSoundFile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slot: components["schemas"]["SoundSlot"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "audio/mpeg": string;
                 };
             };
             default: components["responses"]["Error"];
@@ -1916,6 +2034,54 @@ export interface operations {
                         affected: number;
                     };
                 };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    adminPutSound: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slot: components["schemas"]["SoundSlot"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["SoundForm"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Sound"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    adminDeleteSound: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slot: components["schemas"]["SoundSlot"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             default: components["responses"]["Error"];
         };

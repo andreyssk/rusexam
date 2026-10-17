@@ -16,6 +16,7 @@ import type { AttemptState } from '@/shared/api'
 import { useAttempt, useElapsedTimer } from '@/entities/attempt'
 import { TaskView } from '@/entities/task'
 import { useSaveAnswer } from '@/features/answer-question'
+import { usePlaySound, usePreloadSounds } from '@/entities/sound'
 import { useFinishAttempt } from '@/features/finish-attempt'
 
 /** A wrongly answered training task comes back after the current ones, up to this many wrong tries in total. */
@@ -87,6 +88,8 @@ function Runner({ attemptId, data }: { attemptId: number; data: AttemptState }) 
   const timer = useElapsedTimer(attemptId, true)
   const save = useSaveAnswer(attemptId, !isTraining)
   const finish = useFinishAttempt(attemptId)
+  const play = usePlaySound()
+  usePreloadSounds()
 
   // Restored once, on mount: the saved position, or else the first question without an answer.
   const [restored] = useState(() => {
@@ -144,6 +147,8 @@ function Runner({ attemptId, data }: { attemptId: number; data: AttemptState }) 
     if (!isTraining) return
     if (correct) {
       streak.current += 1
+      // A streak sound replaces the plain success sound (and stands in for it when it has not been uploaded).
+      play(...(streak.current === 5 || streak.current === 10 || streak.current === 15 ? ([`row_${streak.current}`, 'success'] as const) : (['success'] as const)))
       if (streak.current % STREAK_STEP === 0) {
         // One of the cheers, or the plain count message for this streak.
         const pool: TKey[] = [...Array.from({ length: CHEER_COUNT }, (_, i) => `cheer.${i}` as TKey), countMessage(streak.current)]
@@ -153,6 +158,7 @@ function Runner({ attemptId, data }: { attemptId: number; data: AttemptState }) 
       return
     }
     streak.current = 0
+    play('error')
     // Never the same title twice in a row.
     setNopeIdx((prev) => (prev + 1 + Math.floor(Math.random() * (NOPE_COUNT - 1))) % NOPE_COUNT)
     const fails = (retry?.fails ?? 0) + 1

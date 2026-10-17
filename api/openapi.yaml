@@ -106,7 +106,7 @@ components:
     Preferences:
       description: The user's own settings; they follow the account to any device.
       type: object
-      required: [audioVolume, audioSpeed, collapsedCategories]
+      required: [audioVolume, audioSpeed, collapsedCategories, soundsEnabled]
       properties:
         audioVolume: { type: number, format: double, minimum: 0, maximum: 1 }
         audioSpeed: { type: number, format: double, minimum: 0.25, maximum: 4, description: Playback rate of task audio; 1 is normal. }
@@ -114,6 +114,26 @@ components:
           type: array
           items: { type: integer, format: int64 }
           description: Lesson categories folded on the home page; 0 is the group of lessons without a category.
+        soundsEnabled: { type: boolean, description: Whether the motivational sounds of a session play. }
+
+    SoundSlot:
+      type: string
+      enum: [success, error, row_5, row_10, row_15, finish, finish_perfect]
+      description: A moment of a session. row_N is the Nth correct answer in a row; finish_perfect is a session with every answer correct.
+
+    Sound:
+      type: object
+      required: [slot, size, updatedAt]
+      properties:
+        slot: { $ref: '#/components/schemas/SoundSlot' }
+        size: { type: integer }
+        updatedAt: { type: string, format: date-time }
+
+    SoundForm:
+      type: object
+      required: [file]
+      properties:
+        file: { type: string, format: binary, description: An mp3 of at most 1 MB. }
 
     Asset:
       description: A stored file (audio or image) that tasks can use.
@@ -452,6 +472,38 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Preferences' }
+        default: { $ref: '#/components/responses/Error' }
+
+  /sounds:
+    get:
+      operationId: listSounds
+      description: The slots that have a sound.
+      security: [{ bearer: [] }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Sound' }
+        default: { $ref: '#/components/responses/Error' }
+
+  /sounds/{slot}/file:
+    parameters:
+      - name: slot
+        in: path
+        required: true
+        schema: { $ref: '#/components/schemas/SoundSlot' }
+    get:
+      operationId: getSoundFile
+      security: [{ bearer: [] }]
+      responses:
+        '200':
+          description: OK
+          content:
+            audio/mpeg:
+              schema: { type: string, format: binary }
         default: { $ref: '#/components/responses/Error' }
 
   /assets/{assetID}/file:
@@ -1020,6 +1072,35 @@ paths:
                 required: [affected]
                 properties:
                   affected: { type: integer, description: Number of tasks actually changed. }
+        default: { $ref: '#/components/responses/Error' }
+
+  /admin/sounds/{slot}:
+    parameters:
+      - name: slot
+        in: path
+        required: true
+        schema: { $ref: '#/components/schemas/SoundSlot' }
+    put:
+      operationId: adminPutSound
+      description: Sets or replaces the sound of a slot.
+      security: [{ bearer: [] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: { $ref: '#/components/schemas/SoundForm' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Sound' }
+        default: { $ref: '#/components/responses/Error' }
+    delete:
+      operationId: adminDeleteSound
+      security: [{ bearer: [] }]
+      responses:
+        '204': { description: Deleted }
         default: { $ref: '#/components/responses/Error' }
 
   /admin/assets:
